@@ -1,38 +1,59 @@
 # VTArchitect
 
-VTArchitect is a Go-based application designed to interface with PLCs (Programmable Logic Controllers) and InfluxDB for data collection, processing, and visualization. It supports both Ethernet/IP and Modbus TCP protocols for PLC communication and provides an API for querying aggregated data.
+VTArchitect is a Go-based application that implements a Modbus TCP server and interacts with an InfluxDB database. It collects data from PLCs (Programmable Logic Controllers) and writes it to InfluxDB. Additionally, it queries InfluxDB for boolean field percentages over the last minute and logs the results.
 
-## Features
+---
 
-- **PLC Communication**: Supports Ethernet/IP and Modbus TCP protocols.
-- **InfluxDB Integration**: Writes PLC data to InfluxDB and queries aggregated data.
-- **API Server**: Provides an HTTP API for querying boolean field percentages.
-- **Environment Configuration**: Uses `.env` file for configuration.
+## **Key Features**
+1. **Modbus TCP Server**:
+   - The server listens on a configurable port (default: `5020`) and reads data from Modbus registers.
+   - It processes the data and writes it to InfluxDB.
 
-## Prerequisites
+2. **Ethernet/IP Support**:
+   - The application can connect to a PLC using Ethernet/IP and read/write tags.
 
-- Go 1.24 or later
-- InfluxDB instance
-- `.env` file with the following variables:
+3. **InfluxDB Integration**:
+   - The application writes data to InfluxDB and queries it for boolean field percentages.
+   - It uses environment variables for configuration, such as `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, and `INFLUXDB_BUCKET`.
+
+4. **API Server**:
+   - An API server is implemented to expose endpoints for querying boolean field percentages from InfluxDB.
+
+---
+
+## **Requirements**
+### **1. Connected PLC**
+- The application requires a connected PLC to function properly.
+- Supported PLC communication protocols:
+  - **Modbus TCP**: The PLC must support Modbus TCP communication.
+  - **Ethernet/IP**: If using Ethernet/IP, ensure the PLC is configured to allow tag-based communication.
+- Configure the PLC connection details in the `.env` file:
+  ```env
+  PLC_DATA_SOURCE=modbus  # or ethernet-ip
+  PLC_ETHERNET_IP_ADDRESS=<plc-ip-address>  # for Ethernet/IP only
+  MODBUS_TCP_PORT=<modbus-port>  # for Modbus TCP only
+  MODBUS_REGISTER_START=<modbus-register-start>  # for Modbus TCP only
+  MODBUS_REGISTER_END=<modbus-register-end>  # for Modbus TCP only
+  PLC_POLL_MS=<poll-interval-in-ms>
+  ```
+
+### **2. InfluxDB**
+- An InfluxDB instance is required to store and query the data.
+- Configure the InfluxDB connection details in the `.env` file:
   ```env
   INFLUXDB_URL=<your-influxdb-url>
   INFLUXDB_TOKEN=<your-influxdb-token>
   INFLUXDB_ORG=<your-influxdb-organization>
   INFLUXDB_BUCKET=<your-influxdb-bucket>
   INFLUXDB_MEASUREMENT=<your-influxdb-measurement>
-  PLC_DATA_SOURCE=<ethernet-ip|modbus>
-  PLC_ETHERNET_IP_ADDRESS=<plc-ip-address>
-  MODBUS_TCP_PORT=<modbus-port>
-  MODBUS_REGISTER_START=<modbus-register-start>
-  MODBUS_REGISTER_END=<modbus-register-end>
-  PLC_POLL_MS=<poll-interval-in-ms>
   ```
 
-## Installation
+---
 
+## **Installation**
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/vtrgo/vtarchitect.git
    cd vtarchitect
    ```
 
@@ -43,10 +64,10 @@ VTArchitect is a Go-based application designed to interface with PLCs (Programma
 
 3. Create a `.env` file in the root directory and populate it with your configuration.
 
-## Usage
+---
 
-### Running the Application
-
+## **Usage**
+### **Running the Application**
 1. Start the application:
    ```bash
    go run main.go
@@ -58,8 +79,7 @@ VTArchitect is a Go-based application designed to interface with PLCs (Programma
    - Write PLC data to InfluxDB.
    - Start an API server on port `8080`.
 
-### API Endpoints
-
+### **API Endpoints**
 - **GET /api/percentages**
   - Query boolean field percentages from InfluxDB.
   - Query parameters:
@@ -67,26 +87,23 @@ VTArchitect is a Go-based application designed to interface with PLCs (Programma
     - `start` (optional): Start time for the query (default: `-1h`)
     - `stop` (optional): Stop time for the query (default: `now()`)
 
-## Development
+---
 
-### Code Structure
-
+## **Development**
+### **Code Structure**
 - `main.go`: Entry point of the application.
 - `api/`: Contains the API server implementation.
 - `data/`: Handles PLC data mapping and communication.
 - `influx/`: Manages InfluxDB client and operations.
 
-### Running Tests
-
+### **Running Tests**
 To run tests:
 ```bash
 go test ./...
 ```
 
-## License
+---
 
+## **License**
 This project is licensed under the MIT License. See the LICENSE file for details.
 
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request for any changes.
