@@ -34,7 +34,7 @@ func collectBooleanFieldNames() []string {
 
 func processAndLog(plcData data.PLCDataMap, influxClient *influx.Client, boolFields []string) {
 	measurement := os.Getenv("INFLUXDB_MEASUREMENT")
-	bucket := os.Getenv("INFLUXDB_BUCKET")
+	// bucket := os.Getenv("INFLUXDB_BUCKET")
 
 	if measurement == "" {
 		measurement = "status_data"
@@ -45,15 +45,15 @@ func processAndLog(plcData data.PLCDataMap, influxClient *influx.Client, boolFie
 		log.Printf("Error writing to InfluxDB: %v", err)
 	}
 
-	percentages, err := influxClient.AggregateBooleanPercentages(bucket, boolFields, "-1m", "now()")
-	if err != nil {
-		log.Printf("Error querying InfluxDB: %v", err)
-	} else {
-		// log.Println("Boolean field true percentages over the last 1 minute:")
-		for field, pct := range percentages {
-			log.Printf("%s: %.2f%%", field, pct)
-		}
-	}
+	// percentages, err := influxClient.AggregateBooleanPercentages(bucket, boolFields, "-1m", "now()")
+	// if err != nil {
+	// 	log.Printf("Error querying InfluxDB: %v", err)
+	// } else {
+	// 	// log.Println("Boolean field true percentages over the last 1 minute:")
+	// 	for field, pct := range percentages {
+	// 		log.Printf("%s: %.2f%%", field, pct)
+	// 	}
+	// }
 }
 
 func getPollInterval() time.Duration {

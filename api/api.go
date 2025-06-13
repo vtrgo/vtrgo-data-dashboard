@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"vtarchitect/data"
 	"vtarchitect/influx"
@@ -21,24 +22,40 @@ func collectBooleanFieldNames() []string {
 	return fields
 }
 
+func isValidFluxTime(input string) bool {
+	if input == "now()" || (len(input) > 1 && input[0] == '-') {
+		return true
+	}
+	_, err := time.Parse(time.RFC3339, input)
+	return err == nil
+}
+
 func StartAPIServer(client *influx.Client) {
 	http.HandleFunc("/api/percentages", func(w http.ResponseWriter, r *http.Request) {
 		bucket := r.URL.Query().Get("bucket")
 		if bucket == "" {
 			bucket = "vtrFeederData"
 		}
+
 		start := r.URL.Query().Get("start")
 		if start == "" {
 			start = "-1h"
+		} else if !isValidFluxTime(start) {
+			http.Error(w, "Invalid start time format", http.StatusBadRequest)
+			return
 		}
+
 		stop := r.URL.Query().Get("stop")
 		if stop == "" {
 			stop = "now()"
+		} else if !isValidFluxTime(stop) {
+			http.Error(w, "Invalid stop time format", http.StatusBadRequest)
+			return
 		}
 
 		fields := collectBooleanFieldNames()
-		log.Printf("Querying InfluxDB with bucket: %s, start: %s, stop: %s", bucket, start, stop)
-		log.Printf("Boolean fields: %v", fields)
+		// log.Printf("Querying InfluxDB with bucket: %s, start: %s, stop: %s", bucket, start, stop)
+		// log.Printf("Boolean fields: %v", fields)
 		results, err := client.AggregateBooleanPercentages(bucket, fields, start, stop)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
