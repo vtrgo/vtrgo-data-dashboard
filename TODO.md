@@ -52,3 +52,39 @@
 ---
 
 *This list is prioritized for performance improvements, especially for running on resource-constrained hardware. Start with the "Must Do" tasks, then proceed to "Should Do" and "Could Do" as time allows.*
+
+
+# React Native Mobile Application
+
+## Purpose
+
+Develop a cross-platform mobile app (Android initially, iOS future scope) to:
+
+- Read data via NFC from a microcontroller.
+- Fetch real-time and historical data from VTArchitect's HTTP API.
+- Display PLC status and system analytics.
+
+## Planned Features
+
+### NFC Integration
+
+- Use `react-native-nfc-manager`.
+- Read identifiers or payloads from an NFC-enabled microcontroller.
+
+### API Communication
+
+- Use `axios` to consume endpoints like `/api/plc-data` and `/api/percentages`.
+- Handle connectivity issues gracefully.
+
+### UI Components
+
+- Real-time Status Dashboard
+- NFC Data Reader
+- Historical Trend Visualization (Recharts or Victory Native)
+- Field Selector for analytics
+
+### Libraries/Tech Stack
+
+- `React Native`
+- `react-navigation`
+- `axios`
