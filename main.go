@@ -8,15 +8,14 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"time"
 
 	"vtarchitect/api"
+	"vtarchitect/config"
 	"vtarchitect/data"
 	"vtarchitect/influx"
 
-	"github.com/joho/godotenv"
 	"github.com/tbrandon/mbserver"
 )
 
@@ -32,10 +31,8 @@ func collectBooleanFieldNames() []string {
 	return fields
 }
 
-func processAndLog(plcData data.PLCDataMap, influxClient *influx.Client, boolFields []string) {
-	measurement := os.Getenv("INFLUXDB_MEASUREMENT")
-	// bucket := os.Getenv("INFLUXDB_BUCKET")
-
+func processAndLog(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client, boolFields []string) {
+	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 	if measurement == "" {
 		measurement = "status_data"
 	}
@@ -56,8 +53,8 @@ func processAndLog(plcData data.PLCDataMap, influxClient *influx.Client, boolFie
 	// }
 }
 
-func getPollInterval() time.Duration {
-	pollMsStr := os.Getenv("PLC_POLL_MS")
+func getPollInterval(cfg *config.Config) time.Duration {
+	pollMsStr := cfg.Values["PLC_POLL_MS"]
 	pollMs, err := strconv.Atoi(pollMsStr)
 	if err != nil || pollMs <= 0 {
 		pollMs = 1000 // default to 1 second
@@ -65,8 +62,8 @@ func getPollInterval() time.Duration {
 	return time.Duration(pollMs) * time.Millisecond
 }
 
-func runEthernetIPCycle(influxClient *influx.Client, boolFields []string) {
-	ip := os.Getenv("PLC_ETHERNET_IP_ADDRESS")
+func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client, boolFields []string) {
+	ip := cfg.Values["PLC_ETHERNET_IP_ADDRESS"]
 	eth := data.NewPLC(ip)
 
 	for {
@@ -80,17 +77,17 @@ func runEthernetIPCycle(influxClient *influx.Client, boolFields []string) {
 	}
 	defer eth.Disconnect()
 
-	pollInterval := getPollInterval()
+	pollInterval := getPollInterval(cfg)
 	for {
 		plcData := data.LoadFromEthernetIP(eth)
-		processAndLog(plcData, influxClient, boolFields)
+		processAndLog(cfg, plcData, influxClient, boolFields)
 		time.Sleep(pollInterval)
 	}
 }
 
-func runModbusCycle(server *mbserver.Server, influxClient *influx.Client, boolFields []string) {
-	startStr := os.Getenv("MODBUS_REGISTER_START")
-	endStr := os.Getenv("MODBUS_REGISTER_END")
+func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *influx.Client, boolFields []string) {
+	startStr := cfg.Values["MODBUS_REGISTER_START"]
+	endStr := cfg.Values["MODBUS_REGISTER_END"]
 	start, err := strconv.Atoi(startStr)
 	if err != nil {
 		log.Fatalf("Invalid MODBUS_REGISTER_START: %v", err)
@@ -100,7 +97,7 @@ func runModbusCycle(server *mbserver.Server, influxClient *influx.Client, boolFi
 		log.Fatalf("Invalid MODBUS_REGISTER_END: %v", err)
 	}
 
-	pollInterval := getPollInterval()
+	pollInterval := getPollInterval(cfg)
 	for {
 		if len(server.HoldingRegisters) <= end {
 			log.Println("Insufficient register length, skipping cycle")
@@ -109,28 +106,27 @@ func runModbusCycle(server *mbserver.Server, influxClient *influx.Client, boolFi
 		}
 		readSlice := server.HoldingRegisters[start : end+1]
 		plcData := data.LoadPLCDataMap(readSlice)
-		processAndLog(plcData, influxClient, boolFields)
+		processAndLog(cfg, plcData, influxClient, boolFields)
 		time.Sleep(pollInterval)
 	}
 }
 
 func main() {
-
-	err := godotenv.Load()
+	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Println("No .env file found or error loading .env")
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	plcSource := os.Getenv("PLC_DATA_SOURCE")
+	plcSource := cfg.Values["PLC_DATA_SOURCE"]
 	log.Printf("PLC data source: %s", plcSource)
 
-	influxClient, err := influx.NewClient()
+	influxClient, err := influx.NewClient(cfg)
 	if err != nil {
 		log.Fatalf("Failed to connect to InfluxDB: %v", err)
 	}
 	defer influxClient.Close()
 
-	go api.StartAPIServer(influxClient)
+	go api.StartAPIServer(cfg, influxClient)
 
 	boolFields := collectBooleanFieldNames()
 	fmt.Println("Boolean fields for aggregation:")
@@ -139,10 +135,10 @@ func main() {
 	}
 
 	if plcSource == "ethernet-ip" {
-		runEthernetIPCycle(influxClient, boolFields)
+		runEthernetIPCycle(cfg, influxClient, boolFields)
 	} else {
 		server := mbserver.NewServer()
-		port := os.Getenv("MODBUS_TCP_PORT")
+		port := cfg.Values["MODBUS_TCP_PORT"]
 		if port == "" {
 			port = "5020"
 		}
@@ -153,6 +149,6 @@ func main() {
 		defer server.Close()
 		log.Printf("Modbus server listening on port %s", port)
 
-		runModbusCycle(server, influxClient, boolFields)
+		runModbusCycle(cfg, server, influxClient, boolFields)
 	}
 }

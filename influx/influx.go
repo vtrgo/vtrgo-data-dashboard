@@ -3,15 +3,13 @@ package influx
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
 	"reflect"
 	"strings"
 	"time"
+	"vtarchitect/config"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	"github.com/joho/godotenv"
 )
 
 type Client struct {
@@ -22,21 +20,14 @@ type Client struct {
 	bucket       string
 }
 
-func NewClient() (*Client, error) {
-	err := godotenv.Load()
-	if err != nil {
-		log.Printf("Warning: Error loading .env file: %v", err)
-	}
-
-	url := os.Getenv("INFLUXDB_URL")
-	token := os.Getenv("INFLUXDB_TOKEN")
-	org := os.Getenv("INFLUXDB_ORG")
-	bucket := os.Getenv("INFLUXDB_BUCKET")
-
+func NewClient(cfg *config.Config) (*Client, error) {
+	url := cfg.Values["INFLUXDB_URL"]
+	token := cfg.Values["INFLUXDB_TOKEN"]
+	org := cfg.Values["INFLUXDB_ORG"]
+	bucket := cfg.Values["INFLUXDB_BUCKET"]
 	if url == "" || token == "" || org == "" || bucket == "" {
-		return nil, fmt.Errorf("missing required InfluxDB environment variables")
+		return nil, fmt.Errorf("missing required InfluxDB configuration values")
 	}
-
 	client := influxdb2.NewClient(url, token)
 	return &Client{
 		influxClient: client,
@@ -91,33 +82,9 @@ func StructToInfluxFields(input any, prefix string) map[string]interface{} {
 	return fields
 }
 
-func (c *Client) BitStatusPercentage(bucket, field, start, stop string) (float64, error) {
-	measurement := os.Getenv("INFLUXDB_MEASUREMENT")
-	query := fmt.Sprintf(`
-from(bucket: "%s")
-  |> range(start: %s, stop: %s)
-  |> filter(fn: (r) => r["_measurement"] == "%s")
-  |> filter(fn: (r) => r["_field"] == "%s")
-  |> map(fn: (r) => ({ r with _value: if r._value then 1.0 else 0.0 }))
-  |> mean()
-  |> map(fn: (r) => ({ r with _value: r._value * 100.0 }))
-`, bucket, start, stop, measurement, field)
-
-	result, err := c.queryAPI.Query(context.Background(), query)
-	if err != nil {
-		return 0, err
-	}
-
-	for result.Next() {
-		if val, ok := result.Record().Value().(float64); ok {
-			return val, nil
-		}
-	}
-	return 0, result.Err()
-}
-
-func (c *Client) AggregateBooleanPercentages(bucket string, fields []string, start, stop string) (map[string]float64, error) {
-	measurement := os.Getenv("INFLUXDB_MEASUREMENT")
+// AggregateBooleanPercentages calculates the percentage of true values for specified boolean fields
+// in a given time range from the specified InfluxDB bucket.
+func (c *Client) AggregateBooleanPercentages(measurement, bucket string, fields []string, start, stop string) (map[string]float64, error) {
 	var filters []string
 	for _, f := range fields {
 		filters = append(filters, fmt.Sprintf(`r["_field"] == "%s"`, f))

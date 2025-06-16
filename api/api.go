@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"vtarchitect/config"
 	"vtarchitect/data"
 	"vtarchitect/influx"
 )
@@ -30,11 +31,11 @@ func isValidFluxTime(input string) bool {
 	return err == nil
 }
 
-func StartAPIServer(client *influx.Client) {
+func StartAPIServer(cfg *config.Config, client *influx.Client) {
 	http.HandleFunc("/api/percentages", func(w http.ResponseWriter, r *http.Request) {
 		bucket := r.URL.Query().Get("bucket")
 		if bucket == "" {
-			bucket = "vtrFeederData"
+			bucket = cfg.Values["INFLUXDB_BUCKET"]
 		}
 
 		start := r.URL.Query().Get("start")
@@ -54,9 +55,8 @@ func StartAPIServer(client *influx.Client) {
 		}
 
 		fields := collectBooleanFieldNames()
-		// log.Printf("Querying InfluxDB with bucket: %s, start: %s, stop: %s", bucket, start, stop)
-		// log.Printf("Boolean fields: %v", fields)
-		results, err := client.AggregateBooleanPercentages(bucket, fields, start, stop)
+		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
+		results, err := client.AggregateBooleanPercentages(measurement, bucket, fields, start, stop)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
