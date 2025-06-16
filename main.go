@@ -31,7 +31,7 @@ func collectBooleanFieldNames() []string {
 	return fields
 }
 
-func processAndLog(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client, boolFields []string) {
+func processAndLog(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client) {
 	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 	if measurement == "" {
 		measurement = "status_data"
@@ -41,28 +41,18 @@ func processAndLog(cfg *config.Config, plcData data.PLCDataMap, influxClient *in
 	if err != nil {
 		log.Printf("Error writing to InfluxDB: %v", err)
 	}
-
-	// percentages, err := influxClient.AggregateBooleanPercentages(bucket, boolFields, "-1m", "now()")
-	// if err != nil {
-	// 	log.Printf("Error querying InfluxDB: %v", err)
-	// } else {
-	// 	// log.Println("Boolean field true percentages over the last 1 minute:")
-	// 	for field, pct := range percentages {
-	// 		log.Printf("%s: %.2f%%", field, pct)
-	// 	}
-	// }
 }
 
 func getPollInterval(cfg *config.Config) time.Duration {
-	pollMsStr := cfg.Values["PLC_POLL_MS"]
-	pollMs, err := strconv.Atoi(pollMsStr)
-	if err != nil || pollMs <= 0 {
-		pollMs = 1000 // default to 1 second
+	pollInterval := cfg.Values["PLC_POLL_MS"]
+	pollIntervalMs, err := strconv.Atoi(pollInterval)
+	if err != nil || pollIntervalMs <= 0 {
+		pollIntervalMs = 1000 // default to 1 second
 	}
-	return time.Duration(pollMs) * time.Millisecond
+	return time.Duration(pollIntervalMs) * time.Millisecond
 }
 
-func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client, boolFields []string) {
+func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client) {
 	ip := cfg.Values["PLC_ETHERNET_IP_ADDRESS"]
 	eth := data.NewPLC(ip)
 
@@ -80,12 +70,12 @@ func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client, boolFie
 	pollInterval := getPollInterval(cfg)
 	for {
 		plcData := data.LoadFromEthernetIP(eth)
-		processAndLog(cfg, plcData, influxClient, boolFields)
+		processAndLog(cfg, plcData, influxClient)
 		time.Sleep(pollInterval)
 	}
 }
 
-func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *influx.Client, boolFields []string) {
+func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *influx.Client) {
 	startStr := cfg.Values["MODBUS_REGISTER_START"]
 	endStr := cfg.Values["MODBUS_REGISTER_END"]
 	start, err := strconv.Atoi(startStr)
@@ -106,7 +96,7 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *i
 		}
 		readSlice := server.HoldingRegisters[start : end+1]
 		plcData := data.LoadPLCDataMap(readSlice)
-		processAndLog(cfg, plcData, influxClient, boolFields)
+		processAndLog(cfg, plcData, influxClient)
 		time.Sleep(pollInterval)
 	}
 }
@@ -135,7 +125,7 @@ func main() {
 	}
 
 	if plcSource == "ethernet-ip" {
-		runEthernetIPCycle(cfg, influxClient, boolFields)
+		runEthernetIPCycle(cfg, influxClient)
 	} else {
 		server := mbserver.NewServer()
 		port := cfg.Values["MODBUS_TCP_PORT"]
@@ -149,6 +139,6 @@ func main() {
 		defer server.Close()
 		log.Printf("Modbus server listening on port %s", port)
 
-		runModbusCycle(cfg, server, influxClient, boolFields)
+		runModbusCycle(cfg, server, influxClient)
 	}
 }
