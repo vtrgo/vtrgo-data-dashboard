@@ -5,7 +5,7 @@ graph TD
     end
 
     subgraph Debian PC
-        PC_App["Golang Application with REST API"] --> InfluxDB["InfluxDB Time-series Database"]
+        PC_App["Golang Application <br> with REST API"] --> InfluxDB["Time-series Database"]
     end
 
     subgraph STM Microcontroller
@@ -14,7 +14,7 @@ graph TD
     end
 
     subgraph User Interface
-        Smartphone["NFC-enabled Smartphone NFC Reader App"]
+        Smartphone["NFC-enabled Smartphone <br> NFC Reader App"]
     end
 
     PLC -- "Ethernet/IP or Modbus/TCP" --> PC_App
