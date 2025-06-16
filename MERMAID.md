@@ -9,7 +9,7 @@ graph TD
     end
 
     subgraph STM Microcontroller
-        NUCLEO["NUCLEO-H755ZI-Q (Mongoose Library) ModbusTCP Server"]
+        NUCLEO["NUCLEO-H755ZI-Q"]["Mongoose Library"]["ModbusTCP Server"]
         NFC_Board["X-NUCLEO-NFC07A1"]
     end
 
