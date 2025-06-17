@@ -1,8 +1,6 @@
 // File: main.go
 // Package main implements a Modbus TCP server that collects boolean field data
-// and writes it to InfluxDB.
-// It also queries InfluxDB for boolean field percentages over the last minute
-// and logs the results.
+// and writes it to InfluxDB only if the data has changed.
 package main
 
 import (
@@ -19,6 +17,7 @@ import (
 	"github.com/tbrandon/mbserver"
 )
 
+// collectBooleanFieldNames retrieves the names of boolean fields from an empty PLC data map.
 func collectBooleanFieldNames() []string {
 	empty := data.PLCDataMap{}
 	raw := influx.StructToInfluxFields(empty, "")
@@ -31,6 +30,40 @@ func collectBooleanFieldNames() []string {
 	return fields
 }
 
+// hasChanges checks if there are any boolean field changes between previous and current PLC data.
+func hasChanges(prev, curr data.PLCDataMap) bool {
+	p := influx.StructToInfluxFields(prev, "")
+	c := influx.StructToInfluxFields(curr, "")
+	for k, v := range c {
+		if pv, ok := p[k]; ok {
+			if vb, ok := v.(bool); ok {
+				if pb, ok := pv.(bool); ok && vb != pb {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// changedFields returns a map of only the boolean fields that have changed between prev and curr.
+func changedFields(prev, curr data.PLCDataMap) map[string]interface{} {
+	p := influx.StructToInfluxFields(prev, "")
+	c := influx.StructToInfluxFields(curr, "")
+	changed := make(map[string]interface{})
+	for k, v := range c {
+		if pv, ok := p[k]; ok {
+			if vb, ok := v.(bool); ok {
+				if pb, ok := pv.(bool); ok && vb != pb {
+					changed[k] = vb
+				}
+			}
+		}
+	}
+	return changed
+}
+
+// processAndLog processes the PLC data and writes it to InfluxDB.
 func processAndLog(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client) {
 	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 	if measurement == "" {
@@ -38,11 +71,32 @@ func processAndLog(cfg *config.Config, plcData data.PLCDataMap, influxClient *in
 	}
 	fields := influx.StructToInfluxFields(plcData, "")
 	err := influxClient.WritePoint(measurement, nil, fields, time.Now())
+	// Log the data to console for debugging
+	log.Printf("Writing data to InfluxDB: %s", fields)
+	// Handle error if writing to InfluxDB fails
 	if err != nil {
 		log.Printf("Error writing to InfluxDB: %v", err)
 	}
 }
 
+// processAndLogChanged writes only changed boolean fields to InfluxDB.
+func processAndLogChanged(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client, prev data.PLCDataMap) {
+	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
+	if measurement == "" {
+		measurement = "status_data"
+	}
+	fields := changedFields(prev, plcData)
+	if len(fields) == 0 {
+		return // nothing to write
+	}
+	err := influxClient.WritePoint(measurement, nil, fields, time.Now())
+	log.Printf("Writing changed fields to InfluxDB: %s", fields)
+	if err != nil {
+		log.Printf("Error writing to InfluxDB: %v", err)
+	}
+}
+
+// getPollInterval retrieves the polling interval from the configuration.
 func getPollInterval(cfg *config.Config) time.Duration {
 	pollInterval := cfg.Values["PLC_POLL_MS"]
 	pollIntervalMs, err := strconv.Atoi(pollInterval)
@@ -52,6 +106,31 @@ func getPollInterval(cfg *config.Config) time.Duration {
 	return time.Duration(pollIntervalMs) * time.Millisecond
 }
 
+// getFullWriteInterval retrieves the full-state write interval from the configuration (in minutes).
+func getFullWriteInterval(cfg *config.Config) time.Duration {
+	intervalStr := cfg.Values["FULL_WRITE_MINUTES"]
+	intervalMin, err := strconv.Atoi(intervalStr)
+	if err != nil || intervalMin <= 0 {
+		intervalMin = 60 // default to 60 minutes
+	}
+	return time.Duration(intervalMin) * time.Minute
+}
+
+// processAndLogFull writes the full PLC state to InfluxDB, regardless of changes.
+func processAndLogFull(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client) {
+	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
+	if measurement == "" {
+		measurement = "status_data"
+	}
+	fields := influx.StructToInfluxFields(plcData, "")
+	err := influxClient.WritePoint(measurement, nil, fields, time.Now())
+	log.Printf("Full-state write to InfluxDB: %s", fields)
+	if err != nil {
+		log.Printf("Error writing full state to InfluxDB: %v", err)
+	}
+}
+
+// runEthernetIPCycle connects to the PLC via Ethernet/IP and continuously polls for data changes.
 func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client) {
 	ip := cfg.Values["PLC_ETHERNET_IP_ADDRESS"]
 	eth := data.NewPLC(ip)
@@ -68,13 +147,27 @@ func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client) {
 	defer eth.Disconnect()
 
 	pollInterval := getPollInterval(cfg)
+	fullWriteInterval := getFullWriteInterval(cfg)
+	fullWriteTicker := time.NewTicker(fullWriteInterval)
+	defer fullWriteTicker.Stop()
+	var last data.PLCDataMap
 	for {
 		plcData := data.LoadFromEthernetIP(eth)
-		processAndLog(cfg, plcData, influxClient)
+		select {
+		case <-fullWriteTicker.C:
+			processAndLogFull(cfg, plcData, influxClient)
+			last = plcData
+		default:
+			if hasChanges(last, plcData) {
+				processAndLogChanged(cfg, plcData, influxClient, last)
+				last = plcData
+			}
+		}
 		time.Sleep(pollInterval)
 	}
 }
 
+// runModbusCycle connects to the Modbus TCP server and continuously polls for data changes.
 func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *influx.Client) {
 	startStr := cfg.Values["MODBUS_REGISTER_START"]
 	endStr := cfg.Values["MODBUS_REGISTER_END"]
@@ -88,6 +181,10 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *i
 	}
 
 	pollInterval := getPollInterval(cfg)
+	fullWriteInterval := getFullWriteInterval(cfg)
+	fullWriteTicker := time.NewTicker(fullWriteInterval)
+	defer fullWriteTicker.Stop()
+	var last data.PLCDataMap
 	for {
 		if len(server.HoldingRegisters) <= end {
 			log.Println("Insufficient register length, skipping cycle")
@@ -96,11 +193,22 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *i
 		}
 		readSlice := server.HoldingRegisters[start : end+1]
 		plcData := data.LoadPLCDataMap(readSlice)
-		processAndLog(cfg, plcData, influxClient)
+		select {
+		case <-fullWriteTicker.C:
+			processAndLogFull(cfg, plcData, influxClient)
+			last = plcData
+		default:
+			if hasChanges(last, plcData) {
+				processAndLogChanged(cfg, plcData, influxClient, last)
+				last = plcData
+			}
+		}
 		time.Sleep(pollInterval)
 	}
 }
 
+// main initializes the application, loads configuration, sets up InfluxDB client,
+// starts the API server, and runs the appropriate PLC data collection cycle.
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {

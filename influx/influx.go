@@ -115,3 +115,71 @@ from(bucket: "%s")
 	}
 	return percentages, res.Err()
 }
+
+// AggregateBooleanStats calculates the percentage true and time-in-true (in seconds) for specified boolean fields.
+func (c *Client) AggregateBooleanStats(measurement, bucket string, fields []string, start, stop string) (map[string]struct {
+	Percentage float64
+	Seconds    float64
+}, error) {
+	var filters []string
+	for _, f := range fields {
+		filters = append(filters, fmt.Sprintf(`r["_field"] == "%s"`, f))
+	}
+
+	query := fmt.Sprintf(`
+from(bucket: "%s")
+  |> range(start: %s, stop: %s)
+  |> filter(fn: (r) => r["_measurement"] == "%s")
+  |> filter(fn: (r) => %s)
+  |> aggregateWindow(every: 1m, fn: last)
+  |> fill(usePrevious: true)
+  |> map(fn: (r) => ({
+      _field: r._field,
+      _value: if r._value == true then 60 else 0
+  }))
+  |> group(columns: ["_field"])
+  |> reduce(
+      identity: {field: "", totalSeconds: 0, count: 0},
+      fn: (r, accumulator) => ({
+          field: r._field,
+          totalSeconds: accumulator.totalSeconds + int(v: r._value),
+          count: accumulator.count + 60
+      })
+  )
+  |> map(fn: (r) => ({
+      _field: r.field,
+      percentageTrue: (float(v: r.totalSeconds) / float(v: r.count)) * 100.0,
+      timeInTrue: float(v: r.totalSeconds)
+  }))
+`, bucket, start, stop, measurement, strings.Join(filters, " or "))
+
+	res, err := c.queryAPI.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	stats := make(map[string]struct {
+		Percentage float64
+		Seconds    float64
+	})
+
+	for res.Next() {
+		fmt.Printf("DEBUG: Record: Field=%v, Value=%v, Values=%v\n", res.Record().Field(), res.Record().Value(), res.Record().Values())
+		field, ok := res.Record().ValueByKey("_field").(string)
+		if !ok {
+			fmt.Printf("DEBUG: Skipping record with missing _field: %v\n", res.Record().Values())
+			continue
+		}
+		vals := res.Record().Values()
+		percentage, _ := vals["percentageTrue"].(float64)
+		timeInTrue, _ := vals["timeInTrue"].(float64)
+		stats[field] = struct {
+			Percentage float64
+			Seconds    float64
+		}{
+			Percentage: percentage,
+			Seconds:    timeInTrue,
+		}
+	}
+	return stats, res.Err()
+}
