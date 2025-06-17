@@ -36,3 +36,14 @@
 - [ ] Update runEthernetIPCycle to use the new loader and handle mixed-type data from Ethernet-IP
 - [ ] (Optional) Use reflection and struct tags to automate mapping tag names to struct fields for maintainability
 - [ ] Test and validate that both Modbus and Ethernet-IP data acquisition work correctly with the updated structure
+
+## Transition to Event-Based Data Logging
+
+- [ ] Install the NATS Go client library (`github.com/nats-io/nats.go`).
+- [ ] Define an `StateChangeEvent` struct to represent state change events.
+- [ ] Implement a `PublishStateChange` function to publish events to a NATS subject (`state.change`).
+- [ ] Update the logging logic to publish events instead of directly logging to the database.
+- [ ] Create a `SubscribeToStateChanges` function to listen for events and log them to the database.
+- [ ] Set up a NATS connection initializer (`InitializeNATS`).
+- [ ] Integrate the event-based approach into the application, replacing direct logging with event publishing and subscribing.
+- [ ] Test the system to ensure state changes are correctly published and logged via NATS.
