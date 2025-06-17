@@ -68,10 +68,26 @@ func StructToInfluxFields(input any, prefix string) map[string]interface{} {
 			} else if field.Kind() == reflect.Array || field.Kind() == reflect.Slice {
 				tag := ft.Tag.Get("influx")
 				for j := 0; j < field.Len(); j++ {
-					if tag != "" {
-						fields[fmt.Sprintf("%s%s.%s%d", prefix, name, tag, j+1)] = field.Index(j).Interface()
+					elem := field.Index(j)
+					if elem.Kind() == reflect.Struct {
+						// Recursively flatten struct fields, prefixing with index
+						for k, val := range StructToInfluxFields(elem.Interface(), fmt.Sprintf("%s%s[%d].", prefix, name, j)) {
+							fields[k] = val
+						}
+					} else if tag != "" {
+						if tag == "Fault" {
+							fields[fmt.Sprintf("%s%s.%s%d", prefix, name, tag, j)] = elem.Interface()
+						} else {
+							fields[fmt.Sprintf("%s%s.%s%d", prefix, name, tag, j+1)] = elem.Interface()
+						}
+					} else if name == "VibrationDataFloats" {
+						// Map specific indices to meaningful names
+						fieldNames := []string{"VibrationX", "VibrationY", "VibrationZ", "Temperature"}
+						for _, subName := range fieldNames {
+							fields[fmt.Sprintf("%s%s[%d].%s", prefix, name, j/4, subName)] = elem.Interface()
+						}
 					} else {
-						fields[fmt.Sprintf("%s%s[%d]", prefix, name, j)] = field.Index(j).Interface()
+						fields[fmt.Sprintf("%s%s[%d]", prefix, name, j)] = elem.Interface()
 					}
 				}
 			} else {
@@ -164,10 +180,10 @@ from(bucket: "%s")
 	})
 
 	for res.Next() {
-		fmt.Printf("DEBUG: Record: Field=%v, Value=%v, Values=%v\n", res.Record().Field(), res.Record().Value(), res.Record().Values())
+		// fmt.Printf("DEBUG: Record: Field=%v, Value=%v, Values=%v\n", res.Record().Field(), res.Record().Value(), res.Record().Values())
 		field, ok := res.Record().ValueByKey("_field").(string)
 		if !ok {
-			fmt.Printf("DEBUG: Skipping record with missing _field: %v\n", res.Record().Values())
+			// fmt.Printf("DEBUG: Skipping record with missing _field: %v\n", res.Record().Values())
 			continue
 		}
 		vals := res.Record().Values()

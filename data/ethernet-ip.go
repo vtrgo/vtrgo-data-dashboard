@@ -4,6 +4,9 @@ package data
 import (
 	"fmt"
 	"log"
+	"strconv"
+
+	"vtarchitect/config"
 
 	"github.com/danomagnum/gologix"
 )
@@ -135,9 +138,14 @@ func (plc *PLC) WriteTag(tagName string, tagType string, tagValue interface{}) (
 	return nil, fmt.Errorf("unsupported tag type: %s", tagType)
 }
 
-func LoadFromEthernetIP(plc *PLC) PLCDataMap {
+func LoadFromEthernetIP(cfg *config.Config, plc *PLC) PLCDataMap {
 	tag := "EthernetDataWrite"
-	length := 100 // or derive from constants or env
+	length := 100 // default fallback
+	if lstr, ok := cfg.Values["ETHERNET_IP_LENGTH"]; ok {
+		if l, err := strconv.Atoi(lstr); err == nil && l > 0 {
+			length = l
+		}
+	}
 	rawDataAny, err := plc.ReadTag(tag, "[]int", length)
 	// log.Printf("Raw EthernetDataWrite data: %v, err: %v", rawDataAny, err)
 
@@ -152,5 +160,5 @@ func LoadFromEthernetIP(plc *PLC) PLCDataMap {
 		return PLCDataMap{}
 	}
 
-	return LoadPLCDataMap(rawData)
+	return LoadPLCDataMap(cfg, rawData)
 }

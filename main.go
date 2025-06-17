@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -63,22 +62,6 @@ func changedFields(prev, curr data.PLCDataMap) map[string]interface{} {
 	return changed
 }
 
-// processAndLog processes the PLC data and writes it to InfluxDB.
-func processAndLog(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client) {
-	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
-	if measurement == "" {
-		measurement = "status_data"
-	}
-	fields := influx.StructToInfluxFields(plcData, "")
-	err := influxClient.WritePoint(measurement, nil, fields, time.Now())
-	// Log the data to console for debugging
-	log.Printf("Writing data to InfluxDB: %s", fields)
-	// Handle error if writing to InfluxDB fails
-	if err != nil {
-		log.Printf("Error writing to InfluxDB: %v", err)
-	}
-}
-
 // processAndLogChanged writes only changed boolean fields to InfluxDB.
 func processAndLogChanged(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client, prev data.PLCDataMap) {
 	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
@@ -123,6 +106,10 @@ func processAndLogFull(cfg *config.Config, plcData data.PLCDataMap, influxClient
 		measurement = "status_data"
 	}
 	fields := influx.StructToInfluxFields(plcData, "")
+	log.Println("DEBUG: Full-state InfluxDB write fields:")
+	for k, v := range fields {
+		log.Printf("  %s: %v", k, v)
+	}
 	err := influxClient.WritePoint(measurement, nil, fields, time.Now())
 	log.Printf("Full-state write to InfluxDB: %s", fields)
 	if err != nil {
@@ -132,7 +119,7 @@ func processAndLogFull(cfg *config.Config, plcData data.PLCDataMap, influxClient
 
 // runEthernetIPCycle connects to the PLC via Ethernet/IP and continuously polls for data changes.
 func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client) {
-	ip := cfg.Values["PLC_ETHERNET_IP_ADDRESS"]
+	ip := cfg.Values["ETHERNET_IP_ADDRESS"]
 	eth := data.NewPLC(ip)
 
 	for {
@@ -152,7 +139,7 @@ func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client) {
 	defer fullWriteTicker.Stop()
 	var last data.PLCDataMap
 	for {
-		plcData := data.LoadFromEthernetIP(eth)
+		plcData := data.LoadFromEthernetIP(cfg, eth)
 		select {
 		case <-fullWriteTicker.C:
 			processAndLogFull(cfg, plcData, influxClient)
@@ -192,7 +179,7 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *i
 			continue
 		}
 		readSlice := server.HoldingRegisters[start : end+1]
-		plcData := data.LoadPLCDataMap(readSlice)
+		plcData := data.LoadPLCDataMap(cfg, readSlice)
 		select {
 		case <-fullWriteTicker.C:
 			processAndLogFull(cfg, plcData, influxClient)
@@ -227,7 +214,7 @@ func main() {
 	go api.StartAPIServer(cfg, influxClient)
 
 	boolFields := collectBooleanFieldNames()
-	fmt.Println("Boolean fields for aggregation:")
+	// fmt.Println("Boolean fields for aggregation:")
 	for _, field := range boolFields {
 		log.Println(field)
 	}

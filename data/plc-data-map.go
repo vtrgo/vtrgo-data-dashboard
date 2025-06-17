@@ -1,5 +1,20 @@
 package data
 
+import (
+	"fmt"
+	"math"
+	"vtarchitect/config"
+)
+
+// VibrationData represents the structure of vibration data read from the PLC.
+type VibrationData struct {
+	VibrationX  float32
+	VibrationY  float32
+	VibrationZ  float32
+	Temperature float32
+}
+
+// PLCDataMap holds the structure of the PLC data map, including system status bits, feeder status bits, level status bits, jam status bits, fault status bits, and other relevant data.
 type PLCDataMap struct {
 	SystemStatusBits struct {
 		ControlPowerON bool
@@ -30,6 +45,12 @@ type PLCDataMap struct {
 	JamStatusBits struct {
 		JamInOrientation [8]bool `influx:"Lane"`
 	}
+	FaultStatusBits struct {
+		FaultArray0 [16]bool `influx:"Fault"`
+		FaultArray1 [16]bool `influx:"Fault"`
+	}
+
+	SpareStatusBits   [4]uint16
 	SystemStatusWords struct {
 		TimeInAutoMinutes   uint16
 		TimeInAutoSeconds   uint16
@@ -41,13 +62,23 @@ type PLCDataMap struct {
 		BinEmptyTimeMinutes uint16
 		AirTrackBlowerSpeed uint16
 	}
-	LowLevelTimes    [8]uint16
-	FaultCounts      [32]uint16
-	OtherStatusWords [30]uint16 // 1070–1099
+	LowLevelTimes       [8]uint16
+	FaultCounts         [32]uint16
+	VibrationDataFloats [5]VibrationData // mapped from OtherStatusWords
 }
 
-func LoadPLCDataMap(registers []uint16) PLCDataMap {
+// LoadPLCDataMap reads PLC data from the provided registers and returns a PLCDataMap.
+func LoadPLCDataMap(cfg *config.Config, registers []uint16) PLCDataMap {
 	var m PLCDataMap
+	lengthStr, ok := cfg.Values["ETHERNET_IP_LENGTH"]
+	if !ok {
+		return m // or handle error/log as needed
+	}
+	var length int
+	fmt.Sscanf(lengthStr, "%d", &length)
+	if len(registers) < length {
+		return m // or handle error/log as needed
+	}
 
 	// 1000: SystemStatusBits
 	word := registers[0]
@@ -86,6 +117,16 @@ func LoadPLCDataMap(registers []uint16) PLCDataMap {
 		m.JamStatusBits.JamInOrientation[i] = word&(1<<i) != 0
 	}
 
+	// 1004: FaultStatusBits
+	word = registers[4]
+	for i := 0; i < 16; i++ {
+		m.FaultStatusBits.FaultArray0[i] = word&(1<<i) != 0
+	}
+	word = registers[5]
+	for i := 0; i < 16; i++ {
+		m.FaultStatusBits.FaultArray1[i] = word&(1<<i) != 0
+	}
+
 	// 1010–1018: SystemStatusWords
 	m.SystemStatusWords.TimeInAutoMinutes = registers[10]
 	m.SystemStatusWords.TimeInAutoSeconds = registers[11]
@@ -103,8 +144,13 @@ func LoadPLCDataMap(registers []uint16) PLCDataMap {
 	// 1030–1061: FaultCounts
 	copy(m.FaultCounts[:], registers[30:62])
 
-	// 1070–1099: OtherStatusWords
-	copy(m.OtherStatusWords[:], registers[70:100])
-
+	// 1070–1109: VibrationDataWords
+	for i := 0; i < 5; i++ {
+		baseIdx := 70 + i*8                                                                                                          // Each group of 4 float32 values occupies 8 registers
+		m.VibrationDataFloats[i].VibrationX = math.Float32frombits(uint32(registers[baseIdx])<<16 | uint32(registers[baseIdx+1]))    // VibrationX
+		m.VibrationDataFloats[i].VibrationY = math.Float32frombits(uint32(registers[baseIdx+2])<<16 | uint32(registers[baseIdx+3]))  // VibrationY
+		m.VibrationDataFloats[i].VibrationZ = math.Float32frombits(uint32(registers[baseIdx+4])<<16 | uint32(registers[baseIdx+5]))  // VibrationZ
+		m.VibrationDataFloats[i].Temperature = math.Float32frombits(uint32(registers[baseIdx+6])<<16 | uint32(registers[baseIdx+7])) // Temperature
+	}
 	return m
 }

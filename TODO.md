@@ -29,3 +29,10 @@
 - [ ] Polish UI/UX (animations, transitions, accessibility improvements)
 - [ ] Add advanced data visualization (charts, graphs, and custom widgets)
 - [ ] Write end-to-end and integration tests for mobile and web
+
+## Data Structure & Ethernet-IP Support
+- [ ] Refactor PLCDataMap to support mixed data types (bool, int16, int32, float32, string, arrays, etc.) for Ethernet-IP
+- [ ] Implement a new loader function (e.g., LoadPLCDataMapFromEthernetIP) that populates PLCDataMap from a map of tag names to values of various types
+- [ ] Update runEthernetIPCycle to use the new loader and handle mixed-type data from Ethernet-IP
+- [ ] (Optional) Use reflection and struct tags to automate mapping tag names to struct fields for maintainability
+- [ ] Test and validate that both Modbus and Ethernet-IP data acquisition work correctly with the updated structure
