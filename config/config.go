@@ -14,7 +14,7 @@ type Config struct {
 // LoadConfig loads configuration from .config file in the project root
 func LoadConfig() (*Config, error) {
 	// Load from .config file in the project root
-	err := godotenv.Load(".config")
+	err := godotenv.Load(".env")
 	if err != nil {
 		return nil, fmt.Errorf("error loading .config file: %w", err)
 	}
