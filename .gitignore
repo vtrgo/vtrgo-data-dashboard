@@ -23,8 +23,9 @@ vtrgo
 *.work
 *.sum
 *.gold
-# env file
+# env or config file
 .env
+.config
 
 # L5X Files
 *.L5X
