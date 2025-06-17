@@ -106,12 +106,12 @@ func processAndLogFull(cfg *config.Config, plcData data.PLCDataMap, influxClient
 		measurement = "status_data"
 	}
 	fields := influx.StructToInfluxFields(plcData, "")
-	log.Println("DEBUG: Full-state InfluxDB write fields:")
-	for k, v := range fields {
-		log.Printf("  %s: %v", k, v)
-	}
+	// log.Println("DEBUG: Full-state InfluxDB write fields:")
+	// for k, v := range fields {
+	// 	log.Printf("  %s: %v", k, v)
+	// }
 	err := influxClient.WritePoint(measurement, nil, fields, time.Now())
-	log.Printf("Full-state write to InfluxDB: %s", fields)
+	log.Println("Full-state write to InfluxDB")
 	if err != nil {
 		log.Printf("Error writing full state to InfluxDB: %v", err)
 	}
