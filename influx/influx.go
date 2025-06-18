@@ -3,6 +3,7 @@ package influx
 import (
 	"context"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 )
 
 type Client struct {
@@ -198,4 +200,87 @@ from(bucket: "%s")
 		}
 	}
 	return stats, res.Err()
+}
+
+type ChannelBatchWriter struct {
+	writeAPI api.WriteAPIBlocking
+	buffer   []*write.Point
+	maxSize  int
+	flushCh  chan struct{}
+	closeCh  chan struct{}
+}
+
+func NewChannelBatchWriter(writeAPI api.WriteAPIBlocking, maxSize int) *ChannelBatchWriter {
+	cbw := &ChannelBatchWriter{
+		writeAPI: writeAPI,
+		buffer:   make([]*write.Point, 0, maxSize),
+		maxSize:  maxSize,
+		flushCh:  make(chan struct{}, 1),
+		closeCh:  make(chan struct{}),
+	}
+	go cbw.run(5 * time.Second) // Default flush interval
+	return cbw
+}
+
+func (cbw *ChannelBatchWriter) AddPoint(measurement string, tags map[string]string, fields map[string]interface{}, t time.Time) {
+	p := influxdb2.NewPoint(measurement, tags, fields, t)
+	cbw.buffer = append(cbw.buffer, p)
+	log.Printf("DEBUG: Added point to buffer. Current buffer size: %d", len(cbw.buffer))
+	if len(cbw.buffer) >= cbw.maxSize {
+		log.Println("DEBUG: Buffer size reached max capacity. Triggering flush.")
+		select {
+		case cbw.flushCh <- struct{}{}:
+		default:
+		}
+	}
+}
+
+func (cbw *ChannelBatchWriter) Flush() {
+	if len(cbw.buffer) == 0 {
+		log.Println("DEBUG: Flush called but buffer is empty. No action taken.")
+		return
+	}
+	log.Printf("DEBUG: Flushing %d points from buffer.", len(cbw.buffer))
+	points := cbw.buffer
+	cbw.buffer = make([]*write.Point, 0, cbw.maxSize)
+	for _, p := range points {
+		if err := cbw.writeAPI.WritePoint(context.Background(), p); err != nil {
+			log.Printf("DEBUG: Error writing point: %v", err)
+		}
+	}
+	log.Println("DEBUG: Flush completed.")
+}
+
+func (cbw *ChannelBatchWriter) Close() {
+	close(cbw.closeCh)
+}
+
+func (cbw *ChannelBatchWriter) run(flushInterval time.Duration) {
+	log.Println("DEBUG: ChannelBatchWriter run loop started.")
+	ticker := time.NewTicker(flushInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-cbw.flushCh:
+			log.Println("DEBUG: Received flush signal.")
+			cbw.Flush()
+		case <-ticker.C:
+			log.Println("DEBUG: Flush interval reached. Checking buffer.")
+			if len(cbw.buffer) > 0 {
+				log.Printf("DEBUG: Buffer has %d points. Triggering flush.", len(cbw.buffer))
+				cbw.Flush()
+			} else {
+				log.Println("DEBUG: Buffer is empty. No flush needed.")
+			}
+		case <-cbw.closeCh:
+			log.Println("DEBUG: Received close signal. Flushing remaining points and exiting.")
+			cbw.Flush()
+			return
+		}
+	}
+}
+
+func (c *Client) GetWriteAPI() api.WriteAPIBlocking {
+	return c.writeAPI
 }

@@ -63,7 +63,7 @@ func changedFields(prev, curr data.PLCDataMap) map[string]interface{} {
 }
 
 // processAndLogChanged writes only changed boolean fields to InfluxDB.
-func processAndLogChanged(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client, prev data.PLCDataMap) {
+func processAndLogChanged(cfg *config.Config, plcData data.PLCDataMap, batchWriter *influx.ChannelBatchWriter, prev data.PLCDataMap) {
 	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 	if measurement == "" {
 		measurement = "status_data"
@@ -72,11 +72,8 @@ func processAndLogChanged(cfg *config.Config, plcData data.PLCDataMap, influxCli
 	if len(fields) == 0 {
 		return // nothing to write
 	}
-	err := influxClient.WritePoint(measurement, nil, fields, time.Now())
-	log.Printf("Writing changed fields to InfluxDB: %s", fields)
-	if err != nil {
-		log.Printf("Error writing to InfluxDB: %v", err)
-	}
+	batchWriter.AddPoint(measurement, nil, fields, time.Now())
+	log.Printf("Buffered changed fields for InfluxDB: %s", fields)
 }
 
 // getPollInterval retrieves the polling interval from the configuration.
@@ -100,25 +97,18 @@ func getFullWriteInterval(cfg *config.Config) time.Duration {
 }
 
 // processAndLogFull writes the full PLC state to InfluxDB, regardless of changes.
-func processAndLogFull(cfg *config.Config, plcData data.PLCDataMap, influxClient *influx.Client) {
+func processAndLogFull(cfg *config.Config, plcData data.PLCDataMap, batchWriter *influx.ChannelBatchWriter) {
 	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 	if measurement == "" {
 		measurement = "status_data"
 	}
 	fields := influx.StructToInfluxFields(plcData, "")
-	// log.Println("DEBUG: Full-state InfluxDB write fields:")
-	// for k, v := range fields {
-	// 	log.Printf("  %s: %v", k, v)
-	// }
-	err := influxClient.WritePoint(measurement, nil, fields, time.Now())
-	log.Println("Full-state write to InfluxDB")
-	if err != nil {
-		log.Printf("Error writing full state to InfluxDB: %v", err)
-	}
+	batchWriter.AddPoint(measurement, nil, fields, time.Now())
+	log.Println("Buffered full-state write for InfluxDB")
 }
 
 // runEthernetIPCycle connects to the PLC via Ethernet/IP and continuously polls for data changes.
-func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client) {
+func runEthernetIPCycle(cfg *config.Config, batchWriter *influx.ChannelBatchWriter) {
 	ip := cfg.Values["ETHERNET_IP_ADDRESS"]
 	eth := data.NewPLC(ip)
 
@@ -142,11 +132,11 @@ func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client) {
 		plcData := data.LoadFromEthernetIP(cfg, eth)
 		select {
 		case <-fullWriteTicker.C:
-			processAndLogFull(cfg, plcData, influxClient)
+			processAndLogFull(cfg, plcData, batchWriter)
 			last = plcData
 		default:
 			if hasChanges(last, plcData) {
-				processAndLogChanged(cfg, plcData, influxClient, last)
+				processAndLogChanged(cfg, plcData, batchWriter, last)
 				last = plcData
 			}
 		}
@@ -155,7 +145,7 @@ func runEthernetIPCycle(cfg *config.Config, influxClient *influx.Client) {
 }
 
 // runModbusCycle connects to the Modbus TCP server and continuously polls for data changes.
-func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *influx.Client) {
+func runModbusCycle(cfg *config.Config, server *mbserver.Server, batchWriter *influx.ChannelBatchWriter) {
 	startStr := cfg.Values["MODBUS_REGISTER_START"]
 	endStr := cfg.Values["MODBUS_REGISTER_END"]
 	start, err := strconv.Atoi(startStr)
@@ -182,11 +172,11 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, influxClient *i
 		plcData := data.LoadPLCDataMap(cfg, readSlice)
 		select {
 		case <-fullWriteTicker.C:
-			processAndLogFull(cfg, plcData, influxClient)
+			processAndLogFull(cfg, plcData, batchWriter)
 			last = plcData
 		default:
 			if hasChanges(last, plcData) {
-				processAndLogChanged(cfg, plcData, influxClient, last)
+				processAndLogChanged(cfg, plcData, batchWriter, last)
 				last = plcData
 			}
 		}
@@ -211,16 +201,18 @@ func main() {
 	}
 	defer influxClient.Close()
 
+	batchWriter := influx.NewChannelBatchWriter(influxClient.GetWriteAPI(), 100)
+	defer batchWriter.Close()
+
 	go api.StartAPIServer(cfg, influxClient)
 
 	boolFields := collectBooleanFieldNames()
-	// fmt.Println("Boolean fields for aggregation:")
 	for _, field := range boolFields {
 		log.Println(field)
 	}
 
 	if plcSource == "ethernet-ip" {
-		runEthernetIPCycle(cfg, influxClient)
+		runEthernetIPCycle(cfg, batchWriter)
 	} else {
 		server := mbserver.NewServer()
 		port := cfg.Values["MODBUS_TCP_PORT"]
@@ -234,6 +226,6 @@ func main() {
 		defer server.Close()
 		log.Printf("Modbus server listening on port %s", port)
 
-		runModbusCycle(cfg, server, influxClient)
+		runModbusCycle(cfg, server, batchWriter)
 	}
 }
