@@ -87,9 +87,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			return
 		}
 
-		fields := collectBooleanFieldNames()
-		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
-		results, err := client.AggregateBooleanStats(measurement, bucket, fields, start, stop)
+		results, err := client.GetStats(bucket, start, stop)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

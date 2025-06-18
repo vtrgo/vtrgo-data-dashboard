@@ -284,3 +284,169 @@ func (cbw *ChannelBatchWriter) run(flushInterval time.Duration) {
 func (c *Client) GetWriteAPI() api.WriteAPIBlocking {
 	return c.writeAPI
 }
+
+// StatsResult holds the combined results from all three stats queries
+// You may want to define more precise types for each field
+// For now, use interface{} for flexibility
+
+type StatsResult struct {
+	Boolean     interface{} `json:"boolean"`
+	FaultCounts interface{} `json:"faultcounts"`
+	Vibration   interface{} `json:"vibration"`
+}
+
+// GetStats runs the three stats queries and aggregates their results
+func (c *Client) GetStats(bucket, start, stop string) (*StatsResult, error) {
+	// Query templates (use raw string literals for proper formatting)
+	booleanQuery := `from(bucket: "%s")
+  |> range(start: %s, stop: %s)
+  |> filter(fn: (r) =>
+    r._measurement == "status_data" and
+    contains(value: r._field, set: [
+      "FeederStatusBits.BulkHopperEnabled",
+      "FeederStatusBits.BulkHopperLevelNotOK",
+      "FeederStatusBits.CrossConveyorEnabled",
+      "FeederStatusBits.CrossConveyorLevelNotOK",
+      "FeederStatusBits.ElevatorEnabled",
+      "FeederStatusBits.ElevatorLevelNotOK",
+      "FeederStatusBits.EscapementAdvEnabled",
+      "FeederStatusBits.EscapementRetEnabled",
+      "FeederStatusBits.OrientationEnabled",
+      "FeederStatusBits.OrientationLevelNotOK",
+      "FeederStatusBits.TransferEnabled",
+      "FeederStatusBits.TransferLevelNotOK",
+      "JamStatusBits.JamInOrientation.Lane1",
+      "JamStatusBits.JamInOrientation.Lane2",
+      "JamStatusBits.JamInOrientation.Lane3",
+      "JamStatusBits.JamInOrientation.Lane4",
+      "JamStatusBits.JamInOrientation.Lane5",
+      "JamStatusBits.JamInOrientation.Lane6",
+      "JamStatusBits.JamInOrientation.Lane7",
+      "JamStatusBits.JamInOrientation.Lane8",
+      "LevelStatusBits.HighLevelLane.Lane1",
+      "LevelStatusBits.HighLevelLane.Lane2",
+      "LevelStatusBits.HighLevelLane.Lane3",
+      "LevelStatusBits.HighLevelLane.Lane4",
+      "LevelStatusBits.HighLevelLane.Lane5",
+      "LevelStatusBits.HighLevelLane.Lane6",
+      "LevelStatusBits.HighLevelLane.Lane7",
+      "LevelStatusBits.HighLevelLane.Lane8",
+      "LevelStatusBits.NotLowLevelLane.Lane1",
+      "LevelStatusBits.NotLowLevelLane.Lane2",
+      "LevelStatusBits.NotLowLevelLane.Lane3",
+      "LevelStatusBits.NotLowLevelLane.Lane4",
+      "LevelStatusBits.NotLowLevelLane.Lane5",
+      "LevelStatusBits.NotLowLevelLane.Lane6",
+      "LevelStatusBits.NotLowLevelLane.Lane7",
+      "LevelStatusBits.NotLowLevelLane.Lane8"
+    ])
+  )
+  |> map(fn: (r) => ({ r with _value: if r._value == true then 1.0 else 0.0 }))
+  |> group(columns: ["_field"])
+  |> mean(column: "_value")
+  |> yield(name: "boolean")`
+
+	faultCountsQuery := `from(bucket: "%s")
+  |> range(start: %s, stop: %s)
+  |> filter(fn: (r) =>
+      r._measurement == "status_data" and
+      r._field =~ /FaultStatusBits.FaultArray[01].Fault([0-9]|1[0-5])/)
+  |> map(fn: (r) => ({ r with _value: if r._value then 1.0 else 0.0 }))
+  |> group(columns: ["_field"])
+  |> sum(column: "_value")
+  |> yield(name: "fault_true_counts")`
+
+	vibrationQuery := `from(bucket: "%s")
+  |> range(start: %s, stop: %s)
+  |> filter(fn: (r) =>
+      r._measurement == "status_data" and
+      contains(value: r._field, set: [
+        "VibrationDataFloats[0].VibrationX",
+        "VibrationDataFloats[0].VibrationY",
+        "VibrationDataFloats[0].VibrationZ",
+        "VibrationDataFloats[0].Temperature",
+        "VibrationDataFloats[1].VibrationX",
+        "VibrationDataFloats[1].VibrationY",
+        "VibrationDataFloats[1].VibrationZ",
+        "VibrationDataFloats[1].Temperature",
+        "VibrationDataFloats[2].VibrationX",
+        "VibrationDataFloats[2].VibrationY",
+        "VibrationDataFloats[2].VibrationZ",
+        "VibrationDataFloats[2].Temperature",
+        "VibrationDataFloats[3].VibrationX",
+        "VibrationDataFloats[3].VibrationY",
+        "VibrationDataFloats[3].VibrationZ",
+        "VibrationDataFloats[3].Temperature",
+        "VibrationDataFloats[4].VibrationX",
+        "VibrationDataFloats[4].VibrationY",
+        "VibrationDataFloats[4].VibrationZ",
+        "VibrationDataFloats[4].Temperature"
+      ])
+  )
+  |> group(columns: ["_field"])
+  |> mean(column: "_value")
+  |> map(fn: (r) => ({ _time: %s, _measurement: r._field, _value: r._value }))
+  |> yield(name: "mean_over_range")`
+
+	// Format queries with parameters
+	bq := fmt.Sprintf(booleanQuery, bucket, start, stop)
+	fq := fmt.Sprintf(faultCountsQuery, bucket, start, stop)
+	vq := fmt.Sprintf(vibrationQuery, bucket, start, stop, stop)
+
+	// Helper to parse results into a generic slice of maps
+	parseResults := func(res *api.QueryTableResult) ([]map[string]interface{}, error) {
+		var out []map[string]interface{}
+		for res.Next() {
+			row := make(map[string]interface{})
+			for k, v := range res.Record().Values() {
+				row[k] = v
+			}
+			out = append(out, row)
+		}
+		return out, res.Err()
+	}
+
+	// Run all three queries with error logging
+	bRes, err := c.queryAPI.Query(context.Background(), bq)
+	if err != nil {
+		log.Printf("Error running boolean query: %v", err)
+		return nil, fmt.Errorf("boolean query error: %w", err)
+	}
+	booleanData, err := parseResults(bRes)
+	if err != nil {
+		log.Printf("Error parsing boolean query results: %v", err)
+		return nil, fmt.Errorf("boolean parse error: %w", err)
+	}
+
+	fRes, err := c.queryAPI.Query(context.Background(), fq)
+	if err != nil {
+		log.Printf("Error running faultcounts query: %v", err)
+		return nil, fmt.Errorf("faultcounts query error: %w", err)
+	}
+	faultData, err := parseResults(fRes)
+	if err != nil {
+		log.Printf("Error parsing faultcounts query results: %v", err)
+		return nil, fmt.Errorf("faultcounts parse error: %w", err)
+	}
+	log.Printf("DEBUG: faultData = %+v", faultData)
+	if faultData == nil {
+		faultData = make([]map[string]interface{}, 0)
+	}
+
+	vRes, err := c.queryAPI.Query(context.Background(), vq)
+	if err != nil {
+		log.Printf("Error running vibration query: %v", err)
+		return nil, fmt.Errorf("vibration query error: %w", err)
+	}
+	vibrationData, err := parseResults(vRes)
+	if err != nil {
+		log.Printf("Error parsing vibration query results: %v", err)
+		return nil, fmt.Errorf("vibration parse error: %w", err)
+	}
+
+	return &StatsResult{
+		Boolean:     booleanData,
+		FaultCounts: faultData,
+		Vibration:   vibrationData,
+	}, nil
+}
