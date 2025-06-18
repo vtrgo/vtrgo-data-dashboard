@@ -2,7 +2,7 @@
 
 ## High Priority - Must Do
 - [x] Cache Environment Variable Values (load all config at startup and use *config.Config throughout the codebase)
-- [ ] Implement Batch Writes to InfluxDB (buffer data points and write in batches to reduce write frequency and improve performance)
+- [x] Implement Batch Writes to InfluxDB (buffer data points and write in batches to reduce write frequency and improve performance)
 - [x] Optimize PLC Polling Interval (adjust polling interval for best balance between data freshness and system load)
 
 ## Medium Priority - Should Do
