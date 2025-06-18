@@ -1,5 +1,5 @@
 from(bucket: "vtrFeederData")
-  |> range(start: -10h)
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) =>
     r._measurement == "status_data" and
     contains(value: r._field, set: [

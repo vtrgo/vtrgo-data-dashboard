@@ -10,9 +10,22 @@ from(bucket: "vtrFeederData")
         "VibrationDataFloats[1].VibrationX",
         "VibrationDataFloats[1].VibrationY",
         "VibrationDataFloats[1].VibrationZ",
-        "VibrationDataFloats[1].Temperature"
+        "VibrationDataFloats[1].Temperature",
+        "VibrationDataFloats[2].VibrationX",
+        "VibrationDataFloats[2].VibrationY",
+        "VibrationDataFloats[2].VibrationZ",
+        "VibrationDataFloats[2].Temperature",
+        "VibrationDataFloats[3].VibrationX",
+        "VibrationDataFloats[3].VibrationY",
+        "VibrationDataFloats[3].VibrationZ",
+        "VibrationDataFloats[3].Temperature",
+        "VibrationDataFloats[4].VibrationX",
+        "VibrationDataFloats[4].VibrationY",
+        "VibrationDataFloats[4].VibrationZ",
+        "VibrationDataFloats[4].Temperature"
       ])
   )
-  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
-  |> map(fn: (r) => ({ _time: r._time, _measurement: r._field, _value: r._value }))
-  |> yield(name: "1m_mean")
+  |> group(columns: ["_field"])
+  |> mean(column: "_value")
+  |> map(fn: (r) => ({ _time: v.timeRangeStop, _measurement: r._field, _value: r._value }))
+  |> yield(name: "mean_over_range")

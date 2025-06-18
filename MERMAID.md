@@ -5,7 +5,7 @@ graph TD
     end
 
     subgraph Debian PC
-        PC_App["Golang Application <br> with REST API"] --> InfluxDB["Time-series Database"]
+        PC_App["Golang Application <br> with REST API"] --> InfluxDB["InfluxDB <br> Time-series Database"]
     end
 
     subgraph STM Microcontroller
