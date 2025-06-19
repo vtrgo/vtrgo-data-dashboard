@@ -211,9 +211,30 @@ func LoadPLCDataMapFromYAML(yamlPath string, registers []uint16) (map[string]int
 	return result, nil
 }
 
-// LoadArchitectYAML loads and parses architect.yaml and returns the parsed ArchitectYAML struct.
-func LoadArchitectYAML() (*ArchitectYAML, error) {
-	data, err := os.ReadFile("data/architect.yaml")
+// Package-level cache for ArchitectYAML
+var CachedArchitectYAML *ArchitectYAML
+
+// GetArchitectYAML returns the cached ArchitectYAML, or logs fatal if not loaded
+func GetArchitectYAML() *ArchitectYAML {
+	if CachedArchitectYAML == nil {
+		panic("ArchitectYAML not loaded. Call LoadAndCacheArchitectYAML at startup.")
+	}
+	return CachedArchitectYAML
+}
+
+// LoadAndCacheArchitectYAML loads architect.yaml and caches it in memory
+func LoadAndCacheArchitectYAML(path string) error {
+	arch, err := LoadArchitectYAMLFromPath(path)
+	if err != nil {
+		return err
+	}
+	CachedArchitectYAML = arch
+	return nil
+}
+
+// LoadArchitectYAMLFromPath loads and parses architect.yaml from a given path
+func LoadArchitectYAMLFromPath(path string) (*ArchitectYAML, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

@@ -13,12 +13,9 @@ import (
 
 // --- YAML-driven field helpers ---
 
-// GetBooleanFieldNames loads boolean field names from architect.yaml
+// GetBooleanFieldNames loads boolean field names from cached architect.yaml
 func GetBooleanFieldNames() ([]string, error) {
-	mapping, err := data.LoadArchitectYAML()
-	if err != nil {
-		return nil, err
-	}
+	mapping := data.GetArchitectYAML()
 	fields := make([]string, 0, len(mapping.BooleanFields))
 	for _, f := range mapping.BooleanFields {
 		fields = append(fields, f.Name)
@@ -26,12 +23,9 @@ func GetBooleanFieldNames() ([]string, error) {
 	return fields, nil
 }
 
-// GetFaultFieldNames loads fault field names from architect.yaml
+// GetFaultFieldNames loads fault field names from cached architect.yaml
 func GetFaultFieldNames() ([]string, error) {
-	mapping, err := data.LoadArchitectYAML()
-	if err != nil {
-		return nil, err
-	}
+	mapping := data.GetArchitectYAML()
 	fields := make([]string, 0, len(mapping.FaultFields))
 	for _, f := range mapping.FaultFields {
 		fields = append(fields, f.Name)
@@ -39,12 +33,9 @@ func GetFaultFieldNames() ([]string, error) {
 	return fields, nil
 }
 
-// GetFloatFieldNames loads all float field names from architect.yaml (flattened)
+// GetFloatFieldNames loads all float field names from cached architect.yaml (flattened)
 func GetFloatFieldNames() ([]string, error) {
-	mapping, err := data.LoadArchitectYAML()
-	if err != nil {
-		return nil, err
-	}
+	mapping := data.GetArchitectYAML()
 	fields := make([]string, 0, len(mapping.FloatFields))
 	for _, f := range mapping.FloatFields {
 		fields = append(fields, f.Name)
@@ -123,12 +114,8 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			return
 		}
 
-		// Load field lists from YAML
-		arch, err := data.LoadArchitectYAML()
-		if err != nil {
-			http.Error(w, "Failed to load architect.yaml: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
+		// Load field lists from YAML (use cached)
+		arch := data.GetArchitectYAML()
 		booleanFields := make([]string, 0, len(arch.BooleanFields))
 		for _, f := range arch.BooleanFields {
 			booleanFields = append(booleanFields, f.Name)

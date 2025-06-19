@@ -5,6 +5,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -12,6 +14,8 @@ import (
 	"vtarchitect/config"
 	"vtarchitect/data"
 	"vtarchitect/influx"
+
+	"path/filepath"
 
 	"github.com/tbrandon/mbserver"
 )
@@ -258,13 +262,59 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, batchWriter *in
 	}
 }
 
-// main initializes the application, loads configuration, sets up InfluxDB client,
-// starts the API server, and runs the appropriate PLC data collection cycle.
+// checkAndConvertCSV checks for a CSV in tools/csv-to-yaml, converts it to YAML, and deletes the CSV
+func checkAndConvertCSV() error {
+	csvDir := "tools/csv-to-yaml"
+	dataDir := "data"
+	yamlPath := filepath.Join(dataDir, "architect.yaml")
+
+	log.Println("[STARTUP] Checking for CSV file in tools/csv-to-yaml...")
+	files, err := filepath.Glob(filepath.Join(csvDir, "*.csv"))
+	if err != nil {
+		log.Printf("[ERROR] Could not search for CSV: %v", err)
+		return err
+	}
+	if len(files) == 0 {
+		log.Println("[STARTUP] No CSV file found. Skipping conversion.")
+		return nil // No CSV to process
+	}
+
+	csvPath := files[0] // Use the first CSV found
+	log.Printf("[STARTUP] Found CSV: %s. Converting to YAML...", csvPath)
+	cmd := exec.Command("go", "run", filepath.Join(csvDir, "csv-to-yaml.go"), csvPath, yamlPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		log.Printf("[ERROR] CSV to YAML conversion failed: %v", err)
+		return err
+	}
+
+	log.Printf("[STARTUP] Conversion complete. Deleting CSV: %s", csvPath)
+	if err := os.Remove(csvPath); err != nil {
+		log.Printf("[ERROR] Could not delete CSV: %v", err)
+		return err
+	}
+	log.Printf("[STARTUP] Converted %s to %s and deleted the CSV.", csvPath, yamlPath)
+	return nil
+}
+
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
+
+	log.Println("[STARTUP] Checking for CSV and converting to YAML if present...")
+	if err := checkAndConvertCSV(); err != nil {
+		log.Fatalf("CSV to YAML conversion failed: %v", err)
+	}
+
+	log.Println("[STARTUP] Loading and caching architect.yaml...")
+	err = data.LoadAndCacheArchitectYAML("data/architect.yaml")
+	if err != nil {
+		log.Fatalf("Failed to load architect.yaml: %v", err)
+	}
+	log.Println("[STARTUP] architect.yaml loaded and cached successfully.")
 
 	plcSource := cfg.Values["PLC_DATA_SOURCE"]
 	log.Printf("PLC data source: %s", plcSource)
@@ -279,11 +329,6 @@ func main() {
 	defer batchWriter.Close()
 
 	go api.StartAPIServer(cfg, influxClient)
-
-	boolFields := collectBooleanFieldNames()
-	for _, field := range boolFields {
-		log.Println(field)
-	}
 
 	if plcSource == "ethernet-ip" {
 		runEthernetIPCycle(cfg, batchWriter)
