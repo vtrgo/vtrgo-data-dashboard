@@ -3,16 +3,12 @@ package data
 import (
 	"fmt"
 	"math"
+	"os"
+	"strings"
 	"vtarchitect/config"
-)
 
-// VibrationData represents the structure of vibration data read from the PLC.
-type VibrationData struct {
-	VibrationX  float32
-	VibrationY  float32
-	VibrationZ  float32
-	Temperature float32
-}
+	yaml "gopkg.in/yaml.v3"
+)
 
 // PLCDataMap holds the structure of the PLC data map, including system status bits, feeder status bits, level status bits, jam status bits, fault status bits, and other relevant data.
 type PLCDataMap struct {
@@ -50,21 +46,15 @@ type PLCDataMap struct {
 		FaultArray1 [16]bool `influx:"Fault"`
 	}
 
-	SpareStatusBits   [4]uint16
-	SystemStatusWords struct {
-		TimeInAutoMinutes   uint16
-		TimeInAutoSeconds   uint16
-		TimeFaultedMinutes  uint16
-		TimeFaultedSeconds  uint16
-		FaultCountAny       uint16
-		LastCycleTimeMS     uint16
-		AverageCycleTimeMS  uint16
-		BinEmptyTimeMinutes uint16
-		AirTrackBlowerSpeed uint16
-	}
-	LowLevelTimes       [8]uint16
-	FaultCounts         [32]uint16
 	VibrationDataFloats [5]VibrationData // mapped from OtherStatusWords
+}
+
+// VibrationData represents the structure of vibration data read from the PLC.
+type VibrationData struct {
+	VibrationX  float32
+	VibrationY  float32
+	VibrationZ  float32
+	Temperature float32
 }
 
 // LoadPLCDataMap reads PLC data from the provided registers and returns a PLCDataMap.
@@ -117,7 +107,7 @@ func LoadPLCDataMap(cfg *config.Config, registers []uint16) PLCDataMap {
 		m.JamStatusBits.JamInOrientation[i] = word&(1<<i) != 0
 	}
 
-	// 1004: FaultStatusBits
+	// 1004: FaultBits
 	word = registers[4]
 	for i := 0; i < 16; i++ {
 		m.FaultStatusBits.FaultArray0[i] = word&(1<<i) != 0
@@ -126,23 +116,6 @@ func LoadPLCDataMap(cfg *config.Config, registers []uint16) PLCDataMap {
 	for i := 0; i < 16; i++ {
 		m.FaultStatusBits.FaultArray1[i] = word&(1<<i) != 0
 	}
-
-	// 1010–1018: SystemStatusWords
-	m.SystemStatusWords.TimeInAutoMinutes = registers[10]
-	m.SystemStatusWords.TimeInAutoSeconds = registers[11]
-	m.SystemStatusWords.TimeFaultedMinutes = registers[12]
-	m.SystemStatusWords.TimeFaultedSeconds = registers[13]
-	m.SystemStatusWords.FaultCountAny = registers[14]
-	m.SystemStatusWords.LastCycleTimeMS = registers[15]
-	m.SystemStatusWords.AverageCycleTimeMS = registers[16]
-	m.SystemStatusWords.BinEmptyTimeMinutes = registers[17]
-	m.SystemStatusWords.AirTrackBlowerSpeed = registers[18]
-
-	// 1020–1027: LowLevelTimes
-	copy(m.LowLevelTimes[:], registers[20:28])
-
-	// 1030–1061: FaultCounts
-	copy(m.FaultCounts[:], registers[30:62])
 
 	// 1070–1109: VibrationDataWords
 	for i := 0; i < 5; i++ {
@@ -153,4 +126,84 @@ func LoadPLCDataMap(cfg *config.Config, registers []uint16) PLCDataMap {
 		m.VibrationDataFloats[i].Temperature = math.Float32frombits(uint32(registers[baseIdx+6])<<16 | uint32(registers[baseIdx+7])) // Temperature
 	}
 	return m
+}
+
+// ArchitectYAML represents the structure of architect.yaml
+type ArchitectYAML struct {
+	BooleanFields []struct {
+		Name    string `yaml:"name"`
+		Address int    `yaml:"address"`
+		Bit     *int   `yaml:"bit,omitempty"`
+	} `yaml:"boolean_fields"`
+	FaultFields []struct {
+		Name    string `yaml:"name"`
+		Address int    `yaml:"address"`
+		Bit     *int   `yaml:"bit,omitempty"`
+	} `yaml:"fault_fields"`
+	FloatFields []struct {
+		Name   string `yaml:"name"`
+		Fields []struct {
+			Name    string `yaml:"name"`
+			Address int    `yaml:"address"`
+		} `yaml:"fields"`
+	} `yaml:"float_fields"`
+}
+
+// LoadPLCDataMapFromYAML loads the PLCDataMap from registers using architect.yaml mapping (generic for booleans, faults, floats)
+func LoadPLCDataMapFromYAML(yamlPath string, registers []uint16) (map[string]interface{}, error) {
+	data, err := os.ReadFile(yamlPath)
+	if err != nil {
+		return nil, err
+	}
+	var arch ArchitectYAML
+	err = yaml.Unmarshal(data, &arch)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]interface{})
+
+	// Booleans
+	for _, field := range arch.BooleanFields {
+		reg := registers[field.Address]
+		bit := 0
+		if field.Bit != nil {
+			bit = *field.Bit
+		}
+		val := (reg & (1 << bit)) != 0
+		result[field.Name] = val
+	}
+
+	// Faults
+	for _, field := range arch.FaultFields {
+		reg := registers[field.Address]
+		bit := 0
+		if field.Bit != nil {
+			bit = *field.Bit
+		}
+		val := (reg & (1 << bit)) != 0
+		result[field.Name] = val
+	}
+
+	// Floats (each group, each field)
+	for _, group := range arch.FloatFields {
+		floatVals := make(map[string]float32)
+		fields := group.Fields
+		for i := 0; i+1 < len(fields); i += 2 {
+			name := fields[i].Name
+			// Remove (HighINT)/(LowINT) for base name
+			baseName := name
+			if idx := strings.Index(name, "("); idx != -1 {
+				baseName = name[:idx]
+			}
+			// Compose float32 from two registers
+			high := uint32(registers[fields[i].Address])
+			low := uint32(registers[fields[i+1].Address])
+			f := math.Float32frombits((high << 16) | low)
+			floatVals[baseName] = f
+		}
+		result[group.Name] = floatVals
+	}
+
+	return result, nil
 }
