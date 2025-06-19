@@ -45,11 +45,9 @@ func GetFloatFieldNames() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	fields := make([]string, 0)
-	for _, group := range mapping.FloatFields {
-		for _, f := range group.Fields {
-			fields = append(fields, f.Name)
-		}
+	fields := make([]string, 0, len(mapping.FloatFields))
+	for _, f := range mapping.FloatFields {
+		fields = append(fields, f.Name)
 	}
 	return fields, nil
 }
@@ -139,11 +137,9 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		for _, f := range arch.FaultFields {
 			faultFields = append(faultFields, f.Name)
 		}
-		floatFields := make([]string, 0)
-		for _, group := range arch.FloatFields {
-			for _, f := range group.Fields {
-				floatFields = append(floatFields, f.Name)
-			}
+		floatFields := make([]string, 0, len(arch.FloatFields))
+		for _, f := range arch.FloatFields {
+			floatFields = append(floatFields, f.Name)
 		}
 
 		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]

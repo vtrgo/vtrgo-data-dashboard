@@ -35,7 +35,7 @@ type FloatGroup struct {
 type PLCDataMapYAML struct {
 	BooleanFields []PLCFieldYAML `yaml:"boolean_fields"`
 	FaultFields   []PLCFieldYAML `yaml:"fault_fields"`
-	FloatFields   []FloatGroup   `yaml:"float_fields"`
+	FloatFields   []interface{}  `yaml:"float_fields"`
 }
 
 // parseSpecifier parses e.g. ModbusDataWrite[1].10 into address=1, bit=10
@@ -73,7 +73,11 @@ func CSVToYAML(csvPath, yamlPath string) error {
 	}
 
 	var out PLCDataMapYAML
-	floatGroups := make(map[string]*FloatGroup)
+	type floatFieldSimple struct {
+		Name    string `yaml:"name"`
+		Address int    `yaml:"address"`
+	}
+	var floatFields []floatFieldSimple
 
 	for _, row := range records[2:] { // skip header lines
 		if len(row) < 6 {
@@ -97,58 +101,51 @@ func CSVToYAML(csvPath, yamlPath string) error {
 				*bitPtr = bit
 			}
 		}
-		// Influx-friendly field name: replace ' - ' with '.' and remove spaces
-		influxFieldName := strings.ReplaceAll(fieldName, " - ", ".")
-		influxFieldName = strings.ReplaceAll(influxFieldName, " ", "")
 
-		// Improved generic float group detection: handle Floats- and Floats. prefixes
-		floatGroupMatch := false
-		var groupName, fieldBase string
-		if strings.HasPrefix(influxFieldName, "Floats-") {
-			// e.g. Floats-VibrationData[0].VibrationX(HighINT)
-			rest := strings.TrimPrefix(influxFieldName, "Floats-")
-			parts := strings.SplitN(rest, ".", 2)
-			if len(parts) == 2 {
-				groupName = parts[0] // e.g. VibrationData[0]
-				fieldBase = "Floats." + groupName + "." + parts[1]
-				floatGroupMatch = true
-			}
-		} else if strings.HasPrefix(influxFieldName, "Floats.") {
-			// e.g. Floats.VibrationData[0].VibrationX
-			parts := strings.SplitN(influxFieldName, ".", 3)
-			if len(parts) == 3 {
-				groupName = parts[1]
-				fieldBase = influxFieldName
-				floatGroupMatch = true
-			}
-		}
-		if floatGroupMatch {
-			field := FloatFieldYAML{Name: fieldBase, Address: address}
-			if _, ok := floatGroups[groupName]; !ok {
-				floatGroups[groupName] = &FloatGroup{Name: groupName}
-			}
-			floatGroups[groupName].Fields = append(floatGroups[groupName].Fields, field)
+		// Normalize field name: replace ' - ' with '.' and remove all spaces
+		nameNorm := strings.ReplaceAll(fieldName, " - ", ".")
+		nameNorm = strings.ReplaceAll(nameNorm, " ", "")
+
+		// Improved float field detection and naming
+		floatRe := regexp.MustCompile(`(?i)^float[s]?\s*[-.]+\s*`)
+		if floatRe.MatchString(fieldName) {
+			floatName := floatRe.ReplaceAllString(fieldName, "Floats.")
+			floatName = strings.ReplaceAll(floatName, " - ", ".")
+			floatName = strings.ReplaceAll(floatName, " ", "")
+			floatFields = append(floatFields, floatFieldSimple{
+				Name:    floatName,
+				Address: address,
+			})
 			continue
 		}
 
 		group := extractGroup(fieldName)
 		if group == "FaultBits" {
 			out.FaultFields = append(out.FaultFields, PLCFieldYAML{
-				Name:    influxFieldName,
+				Name:    nameNorm,
 				Address: address,
 				Bit:     bitPtr,
 			})
 		} else if group != "Floats" {
 			out.BooleanFields = append(out.BooleanFields, PLCFieldYAML{
-				Name:    influxFieldName,
+				Name:    nameNorm,
 				Address: address,
 				Bit:     bitPtr,
 			})
 		}
 	}
-	// Add float groups to output
-	for _, g := range floatGroups {
-		out.FloatFields = append(out.FloatFields, *g)
+	// Sort float fields by address before appending
+	if len(floatFields) > 1 {
+		for i := 1; i < len(floatFields); i++ {
+			j := i
+			for j > 0 && floatFields[j-1].Address > floatFields[j].Address {
+				floatFields[j-1], floatFields[j] = floatFields[j], floatFields[j-1]
+				j--
+			}
+		}
+	}
+	for _, ff := range floatFields {
+		out.FloatFields = append(out.FloatFields, ff)
 	}
 
 	outBytes, err := yaml.Marshal(out)

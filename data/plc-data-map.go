@@ -141,11 +141,8 @@ type ArchitectYAML struct {
 		Bit     *int   `yaml:"bit,omitempty"`
 	} `yaml:"fault_fields"`
 	FloatFields []struct {
-		Name   string `yaml:"name"`
-		Fields []struct {
-			Name    string `yaml:"name"`
-			Address int    `yaml:"address"`
-		} `yaml:"fields"`
+		Name    string `yaml:"name"`
+		Address int    `yaml:"address"`
 	} `yaml:"float_fields"`
 }
 
@@ -185,24 +182,30 @@ func LoadPLCDataMapFromYAML(yamlPath string, registers []uint16) (map[string]int
 		result[field.Name] = val
 	}
 
-	// Floats (each group, each field)
-	for _, group := range arch.FloatFields {
-		floatVals := make(map[string]float32)
-		fields := group.Fields
-		for i := 0; i+1 < len(fields); i += 2 {
-			name := fields[i].Name
-			// Remove (HighINT)/(LowINT) for base name
-			baseName := name
-			if idx := strings.Index(name, "("); idx != -1 {
-				baseName = name[:idx]
-			}
-			// Compose float32 from two registers
-			high := uint32(registers[fields[i].Address])
-			low := uint32(registers[fields[i+1].Address])
-			f := math.Float32frombits((high << 16) | low)
-			floatVals[baseName] = f
+	// Floats (robust pairing of HighINT/LowINT)
+	floatPairs := make(map[string]struct{ High, Low *int })
+	for i := 0; i < len(arch.FloatFields); i++ {
+		name := arch.FloatFields[i].Name
+		addr := arch.FloatFields[i].Address
+		if strings.HasSuffix(name, "(HighINT)") {
+			base := strings.TrimSuffix(name, "(HighINT)")
+			p := floatPairs[base]
+			p.High = &addr
+			floatPairs[base] = p
+		} else if strings.HasSuffix(name, "(LowINT)") {
+			base := strings.TrimSuffix(name, "(LowINT)")
+			p := floatPairs[base]
+			p.Low = &addr
+			floatPairs[base] = p
 		}
-		result[group.Name] = floatVals
+	}
+	for base, p := range floatPairs {
+		if p.High != nil && p.Low != nil {
+			high := uint32(registers[*p.High])
+			low := uint32(registers[*p.Low])
+			f := math.Float32frombits((high << 16) | low)
+			result[base] = f
+		}
 	}
 
 	return result, nil

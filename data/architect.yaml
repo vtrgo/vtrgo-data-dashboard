@@ -154,21 +154,23 @@ fault_fields:
       address: 9
       bit: 15
 float_fields:
-    - name: OrientationSectionDrive
-      fields:
-        - name: Floats.OrientationSectionDrive.VibrationX(HighINT)
-          address: 20
-        - name: Floats.OrientationSectionDrive.VibrationX(LowINT)
-          address: 21
-        - name: Floats.OrientationSectionDrive.VibrationY(HighINT)
-          address: 22
-        - name: Floats.OrientationSectionDrive.VibrationY(LowINT)
-          address: 23
-        - name: Floats.OrientationSectionDrive.VibrationZ(HighINT)
-          address: 24
-        - name: Floats.OrientationSectionDrive.VibrationZ(LowINT)
-          address: 25
-        - name: Floats.OrientationSectionDrive.Temperature(HighINT)
-          address: 26
-        - name: Floats.OrientationSectionDrive.Temperature(LowINT)
-          address: 27
+    - name: Floats.OrientationSectionDrive.VibrationX(HighINT)
+      address: 20
+    - name: Floats.OrientationSectionDrive.VibrationX(LowINT)
+      address: 21
+    - name: Floats.OrientationSectionDrive.VibrationY(HighINT)
+      address: 22
+    - name: Floats.OrientationSectionDrive.VibrationY(LowINT)
+      address: 23
+    - name: Floats.OrientationSectionDrive.VibrationZ(HighINT)
+      address: 24
+    - name: Floats.OrientationSectionDrive.VibrationZ(LowINT)
+      address: 25
+    - name: Floats.OrientationSectionDrive.Temperature(HighINT)
+      address: 26
+    - name: Floats.OrientationSectionDrive.Temperature(LowINT)
+      address: 27
+    - name: Floats.AirTrackBlowerSpeed(HighINT)
+      address: 28
+    - name: Floats.AirTrackBlowerSpeed(LowINT)
+      address: 29

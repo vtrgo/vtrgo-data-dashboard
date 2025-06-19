@@ -6,7 +6,6 @@
 - [x] Optimize PLC Polling Interval (adjust polling interval for best balance between data freshness and system load)
 
 ## Medium Priority - Should Do
-- [ ] Implement Caching for API Endpoint (cache API responses to reduce database load and improve response times)
 - [ ] Profile the Application (use Go profiling tools to identify and address CPU/memory bottlenecks)
 - [ ] Review and Optimize Flux Queries (analyze and improve InfluxDB query performance)
 
@@ -47,3 +46,6 @@
 - [ ] Set up a NATS connection initializer (`InitializeNATS`).
 - [ ] Integrate the event-based approach into the application, replacing direct logging with event publishing and subscribing.
 - [ ] Test the system to ensure state changes are correctly published and logged via NATS.
+
+## Caching
+- [ ] Implement Caching for API Endpoint (cache API responses to reduce database load and improve response times)

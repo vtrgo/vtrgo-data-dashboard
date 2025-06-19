@@ -29,53 +29,6 @@ func collectBooleanFieldNames() []string {
 	return fields
 }
 
-// hasChanges checks if there are any boolean field changes between previous and current PLC data.
-func hasChanges(prev, curr data.PLCDataMap) bool {
-	p := influx.StructToInfluxFields(prev, "")
-	c := influx.StructToInfluxFields(curr, "")
-	for k, v := range c {
-		if pv, ok := p[k]; ok {
-			if vb, ok := v.(bool); ok {
-				if pb, ok := pv.(bool); ok && vb != pb {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-// changedFields returns a map of only the boolean fields that have changed between prev and curr.
-func changedFields(prev, curr data.PLCDataMap) map[string]interface{} {
-	p := influx.StructToInfluxFields(prev, "")
-	c := influx.StructToInfluxFields(curr, "")
-	changed := make(map[string]interface{})
-	for k, v := range c {
-		if pv, ok := p[k]; ok {
-			if vb, ok := v.(bool); ok {
-				if pb, ok := pv.(bool); ok && vb != pb {
-					changed[k] = vb
-				}
-			}
-		}
-	}
-	return changed
-}
-
-// processAndLogChanged writes only changed boolean fields to InfluxDB.
-func processAndLogChanged(cfg *config.Config, plcData data.PLCDataMap, batchWriter *influx.ChannelBatchWriter, prev data.PLCDataMap) {
-	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
-	if measurement == "" {
-		measurement = "status_data"
-	}
-	fields := changedFields(prev, plcData)
-	if len(fields) == 0 {
-		return // nothing to write
-	}
-	batchWriter.AddPoint(measurement, nil, fields, time.Now())
-	log.Printf("Buffered changed fields for InfluxDB: %s", fields)
-}
-
 // collectChangedFields recursively collects changed fields into the changed map.
 func collectChangedFields(curr, prev map[string]interface{}, changed map[string]interface{}, prefix string) {
 	for k, v := range curr {
@@ -161,17 +114,6 @@ func getFullWriteInterval(cfg *config.Config) time.Duration {
 	return time.Duration(intervalMin) * time.Minute
 }
 
-// processAndLogFull writes the full PLC state to InfluxDB, regardless of changes.
-func processAndLogFull(cfg *config.Config, plcData data.PLCDataMap, batchWriter *influx.ChannelBatchWriter) {
-	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
-	if measurement == "" {
-		measurement = "status_data"
-	}
-	fields := influx.StructToInfluxFields(plcData, "")
-	batchWriter.AddPoint(measurement, nil, fields, time.Now())
-	log.Println("Buffered full-state write for InfluxDB")
-}
-
 // processAndLogFullYAML writes the full PLC state to InfluxDB using the YAML-driven map.
 func processAndLogFullYAML(cfg *config.Config, plcData map[string]interface{}, batchWriter *influx.ChannelBatchWriter) {
 	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
@@ -181,22 +123,6 @@ func processAndLogFullYAML(cfg *config.Config, plcData map[string]interface{}, b
 	batchWriter.AddPoint(measurement, nil, plcData, time.Now())
 	log.Println("Buffered full-state write for InfluxDB (YAML)")
 }
-
-// printDataMap recursively prints all fields in the PLC data map, including nested float groups.
-// func printDataMap(m map[string]interface{}, prefix string) {
-// 	for k, v := range m {
-// 		switch val := v.(type) {
-// 		case map[string]float32:
-// 			for fk, fv := range val {
-// 				log.Printf("[DEBUG] %s%s.%s = %v", prefix, k, fk, fv)
-// 			}
-// 		case map[string]interface{}:
-// 			printDataMap(val, prefix+k+".")
-// 		default:
-// 			log.Printf("[DEBUG] %s%s = %v", prefix, k, v)
-// 		}
-// 	}
-// }
 
 // runEthernetIPCycle connects to the PLC via Ethernet/IP and continuously polls for data changes.
 func runEthernetIPCycle(cfg *config.Config, batchWriter *influx.ChannelBatchWriter) {
@@ -358,32 +284,6 @@ func main() {
 	for _, field := range boolFields {
 		log.Println(field)
 	}
-
-	// --- Debug: Compare LoadPLCDataMap and LoadPLCDataMapFromYAML ---
-	// Use a dummy register slice of appropriate length (simulate real data)
-	// lengthStr := cfg.Values["ETHERNET_IP_LENGTH"]
-	// length := 128
-	// if lengthStr != "" {
-	// 	if l, err := strconv.Atoi(lengthStr); err == nil {
-	// 		length = l
-	// 	}
-	// }
-	// registers := make([]uint16, length)
-	// // Optionally, fill with test data here if desired
-
-	// // Load using old method
-	// plcStruct := data.LoadPLCDataMap(cfg, registers)
-	// log.Printf("[DEBUG] LoadPLCDataMap output: %+v", plcStruct)
-
-	// // Load using new YAML-driven method
-	// yamlPath := "data/architect.yaml"
-	// plcMap, err := data.LoadPLCDataMapFromYAML(yamlPath, registers)
-	// if err != nil {
-	// 	log.Printf("[DEBUG] LoadPLCDataMapFromYAML error: %v", err)
-	// } else {
-	// 	log.Printf("[DEBUG] LoadPLCDataMapFromYAML output: %+v", plcMap)
-	// }
-	// --- End Debug ---
 
 	if plcSource == "ethernet-ip" {
 		runEthernetIPCycle(cfg, batchWriter)
