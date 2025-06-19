@@ -17,401 +17,158 @@ boolean_fields:
     - name: SystemStatusBits.SystemFaulted
       address: 0
       bit: 5
-    - name: FeederStatusBits.BulkHopperEnabled
+    - name: FeederStatusBits.BulkElevatorConveyorEnabledFWD
       address: 1
       bit: 0
-    - name: FeederStatusBits.BulkHopperLevelNotOK
+    - name: FeederStatusBits.BulkElevatorConveyorEnabledREV
       address: 1
       bit: 1
-    - name: FeederStatusBits.ElevatorEnabled
+    - name: FeederStatusBits.BulkElevatorLowLevel
       address: 1
       bit: 2
-    - name: FeederStatusBits.ElevatorLevelNotOK
+    - name: FeederStatusBits.OrientationSectionDriveEnabled
       address: 1
       bit: 3
-    - name: FeederStatusBits.CrossConveyorEnabled
+    - name: FeederStatusBits.AirTrackBlowerEnabled
       address: 1
       bit: 4
-    - name: FeederStatusBits.CrossConveyorLevelNotOK
+    - name: FeederStatusBits.StepperEnabled
       address: 1
       bit: 5
-    - name: FeederStatusBits.OrientationEnabled
+    - name: FeederStatusBits.Spare
       address: 1
       bit: 6
-    - name: FeederStatusBits.OrientationLevelNotOK
-      address: 1
-      bit: 7
-    - name: FeederStatusBits.TransferEnabled
-      address: 1
-      bit: 8
-    - name: FeederStatusBits.TransferLevelOK
-      address: 1
-      bit: 9
-    - name: FeederStatusBits.EscapementAdv.Enabled
-      address: 1
-      bit: 10
-    - name: FeederStatusBits.EscapementRet.Enabled
-      address: 1
-      bit: 11
     - name: LevelStatusBits.HighLevel.Lane1
-      address: 2
+      address: 4
       bit: 0
     - name: LevelStatusBits.HighLevel.Lane2
-      address: 2
+      address: 4
       bit: 1
     - name: LevelStatusBits.HighLevel.Lane3
-      address: 2
+      address: 4
       bit: 2
     - name: LevelStatusBits.HighLevel.Lane4
-      address: 2
+      address: 4
       bit: 3
     - name: LevelStatusBits.HighLevel.Lane5
-      address: 2
+      address: 4
       bit: 4
     - name: LevelStatusBits.HighLevel.Lane6
-      address: 2
+      address: 4
       bit: 5
     - name: LevelStatusBits.HighLevel.Lane7
-      address: 2
+      address: 4
       bit: 6
     - name: LevelStatusBits.HighLevel.Lane8
-      address: 2
+      address: 4
       bit: 7
     - name: LevelStatusBits.NotatLowLevel.Lane1
-      address: 2
+      address: 4
       bit: 8
     - name: LevelStatusBits.NotatLowLevel.Lane2
-      address: 2
+      address: 4
       bit: 9
     - name: LevelStatusBits.NotatLowLevel.Lane3
-      address: 2
+      address: 4
       bit: 10
     - name: LevelStatusBits.NotatLowLevel.Lane4
-      address: 2
+      address: 4
       bit: 11
     - name: LevelStatusBits.NotatLowLevel.Lane5
-      address: 2
+      address: 4
       bit: 12
     - name: LevelStatusBits.NotatLowLevel.Lane6
-      address: 2
+      address: 4
       bit: 13
     - name: LevelStatusBits.NotatLowLevel.Lane7
-      address: 2
+      address: 4
       bit: 14
     - name: LevelStatusBits.NotatLowLevel.Lane8
-      address: 2
+      address: 4
       bit: 15
-    - name: JamStatusBits.JamInOrientation.Lane1
-      address: 3
-      bit: 0
-    - name: JamStatusBits.JamInOrientation.Lane2
-      address: 3
-      bit: 1
-    - name: JamStatusBits.JamInOrientation.Lane3
-      address: 3
-      bit: 2
-    - name: JamStatusBits.JamInOrientation.Lane4
-      address: 3
-      bit: 3
-    - name: JamStatusBits.JamInOrientation.Lane5
-      address: 3
-      bit: 4
-    - name: JamStatusBits.JamInOrientation.Lane6
-      address: 3
-      bit: 5
-    - name: JamStatusBits.JamInOrientation.Lane7
-      address: 3
-      bit: 6
-    - name: JamStatusBits.JamInOrientation.Lane8
-      address: 3
-      bit: 7
 fault_fields:
-    - name: FaultBits.FaultArray0.Fault0
-      address: 4
-      bit: 0
-    - name: FaultBits.FaultArray0.Fault1
-      address: 4
-      bit: 1
-    - name: FaultBits.FaultArray0.Fault2
-      address: 4
-      bit: 2
-    - name: FaultBits.FaultArray0.Fault3
-      address: 4
-      bit: 3
-    - name: FaultBits.FaultArray0.Fault4
-      address: 4
-      bit: 4
-    - name: FaultBits.FaultArray0.Fault5
-      address: 4
-      bit: 5
-    - name: FaultBits.FaultArray0.Fault6
-      address: 4
-      bit: 6
-    - name: FaultBits.FaultArray0.Fault7
-      address: 4
-      bit: 7
-    - name: FaultBits.FaultArray0.Fault8
-      address: 4
-      bit: 8
-    - name: FaultBits.FaultArray0.Fault9
-      address: 4
-      bit: 9
-    - name: FaultBits.FaultArray0.Fault10
-      address: 4
-      bit: 10
-    - name: FaultBits.FaultArray0.Fault11
-      address: 4
-      bit: 11
-    - name: FaultBits.FaultArray0.Fault12
-      address: 4
-      bit: 12
-    - name: FaultBits.FaultArray0.Fault13
-      address: 4
-      bit: 13
-    - name: FaultBits.FaultArray0.Fault14
-      address: 4
-      bit: 14
-    - name: FaultBits.FaultArray0.Fault15
-      address: 4
-      bit: 15
-    - name: FaultBits.FaultArray0.Fault16
-      address: 5
-      bit: 0
-    - name: FaultBits.FaultArray0.Fault17
-      address: 5
-      bit: 1
-    - name: FaultBits.FaultArray0.Fault18
-      address: 5
-      bit: 2
-    - name: FaultBits.FaultArray0.Fault19
-      address: 5
-      bit: 3
-    - name: FaultBits.FaultArray0.Fault20
-      address: 5
-      bit: 4
-    - name: FaultBits.FaultArray0.Fault21
-      address: 5
-      bit: 5
-    - name: FaultBits.FaultArray0.Fault22
-      address: 5
-      bit: 6
-    - name: FaultBits.FaultArray0.Fault23
-      address: 5
-      bit: 7
-    - name: FaultBits.FaultArray0.Fault24
-      address: 5
-      bit: 8
-    - name: FaultBits.FaultArray0.Fault25
-      address: 5
-      bit: 9
-    - name: FaultBits.FaultArray0.Fault26
-      address: 5
-      bit: 10
-    - name: FaultBits.FaultArray0.Fault27
-      address: 5
-      bit: 11
-    - name: FaultBits.FaultArray0.Fault28
-      address: 5
-      bit: 12
-    - name: FaultBits.FaultArray0.Fault29
-      address: 5
-      bit: 13
-    - name: FaultBits.FaultArray0.Fault30
-      address: 5
-      bit: 14
-    - name: FaultBits.FaultArray0.Fault31
-      address: 5
-      bit: 15
-    - name: FaultBits.FaultArray1.Fault0
+    - name: FaultBits.AirPressureNotOKFault
       address: 6
       bit: 0
-    - name: FaultBits.FaultArray1.Fault1
+    - name: FaultBits.PLCtoPLCFault
       address: 6
       bit: 1
-    - name: FaultBits.FaultArray1.Fault2
-      address: 6
-      bit: 2
-    - name: FaultBits.FaultArray1.Fault3
-      address: 6
-      bit: 3
-    - name: FaultBits.FaultArray1.Fault4
-      address: 6
-      bit: 4
-    - name: FaultBits.FaultArray1.Fault5
-      address: 6
-      bit: 5
-    - name: FaultBits.FaultArray1.Fault6
-      address: 6
-      bit: 6
-    - name: FaultBits.FaultArray1.Fault7
-      address: 6
-      bit: 7
-    - name: FaultBits.FaultArray1.Fault8
-      address: 6
-      bit: 8
-    - name: FaultBits.FaultArray1.Fault9
-      address: 6
-      bit: 9
-    - name: FaultBits.FaultArray1.Fault10
-      address: 6
-      bit: 10
-    - name: FaultBits.FaultArray1.Fault11
-      address: 6
-      bit: 11
-    - name: FaultBits.FaultArray1.Fault12
-      address: 6
-      bit: 12
-    - name: FaultBits.FaultArray1.Fault13
-      address: 6
-      bit: 13
-    - name: FaultBits.FaultArray1.Fault14
-      address: 6
-      bit: 14
-    - name: FaultBits.FaultArray1.Fault15
-      address: 6
-      bit: 15
-    - name: FaultBits.FaultArray1.Fault16
+    - name: FaultBits.BulkElevatorConveyorFault
       address: 7
       bit: 0
-    - name: FaultBits.FaultArray1.Fault17
+    - name: FaultBits.OrientationSectionDriveFault
       address: 7
       bit: 1
-    - name: FaultBits.FaultArray1.Fault18
+    - name: FaultBits.AirTrackBlowerFault
       address: 7
       bit: 2
-    - name: FaultBits.FaultArray1.Fault19
+    - name: FaultBits.StepperFault
       address: 7
       bit: 3
-    - name: FaultBits.FaultArray1.Fault20
-      address: 7
+    - name: FaultBits.JamInOrientation.Lane1
+      address: 9
+      bit: 0
+    - name: FaultBits.JamInOrientation.Lane2
+      address: 9
+      bit: 1
+    - name: FaultBits.JamInOrientation.Lane3
+      address: 9
+      bit: 2
+    - name: FaultBits.JamInOrientation.Lane4
+      address: 9
+      bit: 3
+    - name: FaultBits.JamInOrientation.Lane5
+      address: 9
       bit: 4
-    - name: FaultBits.FaultArray1.Fault21
-      address: 7
+    - name: FaultBits.JamInOrientation.Lane6
+      address: 9
       bit: 5
-    - name: FaultBits.FaultArray1.Fault22
-      address: 7
+    - name: FaultBits.JamInOrientation.Lane7
+      address: 9
       bit: 6
-    - name: FaultBits.FaultArray1.Fault23
-      address: 7
+    - name: FaultBits.JamInOrientation.Lane8
+      address: 9
       bit: 7
-    - name: FaultBits.FaultArray1.Fault24
-      address: 7
+    - name: FaultBits.JamInStorage.Lane1
+      address: 9
       bit: 8
-    - name: FaultBits.FaultArray1.Fault25
-      address: 7
+    - name: FaultBits.JamInStorage.Lane2
+      address: 9
       bit: 9
-    - name: FaultBits.FaultArray1.Fault26
-      address: 7
+    - name: FaultBits.JamInStorage.Lane3
+      address: 9
       bit: 10
-    - name: FaultBits.FaultArray1.Fault27
-      address: 7
+    - name: FaultBits.JamInStorage.Lane4
+      address: 9
       bit: 11
-    - name: FaultBits.FaultArray1.Fault28
-      address: 7
+    - name: FaultBits.JamInStorage.Lane5
+      address: 9
       bit: 12
-    - name: FaultBits.FaultArray1.Fault29
-      address: 7
+    - name: FaultBits.JamInStorage.Lane6
+      address: 9
       bit: 13
-    - name: FaultBits.FaultArray1.Fault30
-      address: 7
+    - name: FaultBits.JamInStorage.Lane7
+      address: 9
       bit: 14
-    - name: FaultBits.FaultArray1.Fault31
-      address: 7
+    - name: FaultBits.JamInStorage.Lane8
+      address: 9
       bit: 15
 float_fields:
-    - name: VibrationData[0]
+    - name: OrientationSectionDrive
       fields:
-        - name: Floats.VibrationData[0].VibrationX(HighINT)
-          address: 70
-        - name: Floats.VibrationData[0].VibrationX(LowINT)
-          address: 71
-        - name: Floats.VibrationData[0].VibrationY(HighINT)
-          address: 72
-        - name: Floats.VibrationData[0].VibrationY(LowINT)
-          address: 73
-        - name: Floats.VibrationData[0].VibrationZ(HighINT)
-          address: 74
-        - name: Floats.VibrationData[0].VibrationZ(LowINT)
-          address: 75
-        - name: Floats.VibrationData[0].Temperature(HighINT)
-          address: 76
-        - name: Floats.VibrationData[0].Temperature(LowINT)
-          address: 77
-    - name: VibrationData[1]
-      fields:
-        - name: Floats.VibrationData[1].VibrationX(HighINT)
-          address: 78
-        - name: Floats.VibrationData[1].VibrationX(LowINT)
-          address: 79
-        - name: Floats.VibrationData[1].VibrationY(HighINT)
-          address: 80
-        - name: Floats.VibrationData[1].VibrationY(LowINT)
-          address: 81
-        - name: Floats.VibrationData[1].VibrationZ(HighINT)
-          address: 82
-        - name: Floats.VibrationData[1].VibrationZ(LowINT)
-          address: 83
-        - name: Floats.VibrationData[1].Temperature(HighINT)
-          address: 84
-        - name: Floats.VibrationData[1].Temperature(LowINT)
-          address: 85
-    - name: VibrationData[2]
-      fields:
-        - name: Floats.VibrationData[2].VibrationX(HighINT)
-          address: 86
-        - name: Floats.VibrationData[2].VibrationX(LowINT)
-          address: 87
-        - name: Floats.VibrationData[2].VibrationY(HighINT)
-          address: 88
-        - name: Floats.VibrationData[2].VibrationY(LowINT)
-          address: 89
-        - name: Floats.VibrationData[2].VibrationZ(HighINT)
-          address: 90
-        - name: Floats.VibrationData[2].VibrationZ(LowINT)
-          address: 91
-        - name: Floats.VibrationData[2].Temperature(HighINT)
-          address: 92
-        - name: Floats.VibrationData[2].Temperature(LowINT)
-          address: 93
-    - name: VibrationData[3]
-      fields:
-        - name: Floats.VibrationData[3].VibrationX(HighINT)
-          address: 94
-        - name: Floats.VibrationData[3].VibrationX(LowINT)
-          address: 95
-        - name: Floats.VibrationData[3].VibrationY(HighINT)
-          address: 96
-        - name: Floats.VibrationData[3].VibrationY(LowINT)
-          address: 97
-        - name: Floats.VibrationData[3].VibrationZ(HighINT)
-          address: 98
-        - name: Floats.VibrationData[3].VibrationZ(LowINT)
-          address: 99
-        - name: Floats.VibrationData[3].Temperature(HighINT)
-          address: 100
-        - name: Floats.VibrationData[3].Temperature(LowINT)
-          address: 101
-    - name: SpeedData[0]
-      fields:
-        - name: Floats.SpeedData[0].BulkHopperSpeed(LowINT)
-          address: 102
-        - name: Floats.SpeedData[0].BulkHopperSpeed(HighINT)
-          address: 103
-    - name: SpeedData[1]
-      fields:
-        - name: Floats.SpeedData[1].CrossConveyorSpeed(LowINT)
-          address: 104
-        - name: Floats.SpeedData[1].CrossConveyorSpeed(HighINT)
-          address: 105
-    - name: SpeedData[2]
-      fields:
-        - name: Floats.SpeedData[2].TransferConveyorSpeed(LowINT)
-          address: 106
-        - name: Floats.SpeedData[2].TransferConveyorSpeed(HighINT)
-          address: 107
-    - name: SpeedData[3]
-      fields:
-        - name: Floats.SpeedData[3].OrientationConveyorSpeed(LowINT)
-          address: 108
-        - name: Floats.SpeedData[3].OrientationConveyorSpeed(HighINT)
-          address: 109
+        - name: Floats.OrientationSectionDrive.VibrationX(HighINT)
+          address: 20
+        - name: Floats.OrientationSectionDrive.VibrationX(LowINT)
+          address: 21
+        - name: Floats.OrientationSectionDrive.VibrationY(HighINT)
+          address: 22
+        - name: Floats.OrientationSectionDrive.VibrationY(LowINT)
+          address: 23
+        - name: Floats.OrientationSectionDrive.VibrationZ(HighINT)
+          address: 24
+        - name: Floats.OrientationSectionDrive.VibrationZ(LowINT)
+          address: 25
+        - name: Floats.OrientationSectionDrive.Temperature(HighINT)
+          address: 26
+        - name: Floats.OrientationSectionDrive.Temperature(LowINT)
+          address: 27
