@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"vtarchitect/config"
@@ -51,6 +52,24 @@ func isValidFluxTime(input string) bool {
 	}
 	_, err := time.Parse(time.RFC3339, input)
 	return err == nil
+}
+
+// Helper to strip (HighINT)/(LowINT) and deduplicate
+func getCombinedFloatFields(floatFields []struct {
+	Name    string `yaml:"name"`
+	Address int    `yaml:"address"`
+}) []string {
+	re := regexp.MustCompile(`\([^)]+\)`)
+	unique := make(map[string]struct{})
+	result := make([]string, 0, len(floatFields))
+	for _, f := range floatFields {
+		combined := re.ReplaceAllString(f.Name, "")
+		if _, exists := unique[combined]; !exists {
+			unique[combined] = struct{}{}
+			result = append(result, combined)
+		}
+	}
+	return result
 }
 
 func StartAPIServer(cfg *config.Config, client *influx.Client) {
@@ -116,6 +135,8 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 
 		// Load field lists from YAML (use cached)
 		arch := data.GetArchitectYAML()
+
+		// Always use the Influx field/tag names from YAML cache for queries
 		booleanFields := make([]string, 0, len(arch.BooleanFields))
 		for _, f := range arch.BooleanFields {
 			booleanFields = append(booleanFields, f.Name)
@@ -124,15 +145,19 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		for _, f := range arch.FaultFields {
 			faultFields = append(faultFields, f.Name)
 		}
-		floatFields := make([]string, 0, len(arch.FloatFields))
-		for _, f := range arch.FloatFields {
-			floatFields = append(floatFields, f.Name)
-		}
+		// Use only the combined/actual influx float fields
+		floatFields := getCombinedFloatFields(arch.FloatFields)
 
 		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 		if measurement == "" {
 			measurement = "status_data"
 		}
+
+		// Debug: log the actual field names used for queries
+		log.Printf("Boolean fields (query): %+v", booleanFields)
+		log.Printf("Fault fields (query): %+v", faultFields)
+		log.Printf("Float fields (query): %+v", floatFields)
+		log.Printf("Measurement: %s, Bucket: %s, Start: %s, Stop: %s", measurement, bucket, start, stop)
 
 		// Aggregate booleans (percentage true)
 		boolResults, err := client.AggregateBooleanPercentages(measurement, bucket, booleanFields, start, stop)
@@ -152,11 +177,12 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			http.Error(w, "Float aggregation error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		log.Printf("Float aggregation results: %+v", floatResults)
 
 		results := map[string]interface{}{
-			"booleans": boolResults,
-			"faults":   faultResults,
-			"floats":   floatResults,
+			"boolean_percentages": boolResults,
+			"fault_counts":        faultResults,
+			"float_averages":      floatResults,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(results)
