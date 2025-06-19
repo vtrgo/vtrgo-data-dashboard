@@ -76,6 +76,71 @@ func processAndLogChanged(cfg *config.Config, plcData data.PLCDataMap, batchWrit
 	log.Printf("Buffered changed fields for InfluxDB: %s", fields)
 }
 
+// collectChangedFields recursively collects changed fields into the changed map.
+func collectChangedFields(curr, prev map[string]interface{}, changed map[string]interface{}, prefix string) {
+	for k, v := range curr {
+		if pv, ok := prev[k]; ok {
+			switch va := v.(type) {
+			case map[string]interface{}:
+				bv, ok := pv.(map[string]interface{})
+				if ok {
+					// Only add prefix for nested maps (not float groups)
+					collectChangedFields(va, bv, changed, prefix+k+".")
+				}
+			case map[string]float32:
+				bv, ok := pv.(map[string]float32)
+				if ok {
+					for fk, fv := range va {
+						if bv[fk] != fv {
+							// Use fk as the full field name (do not prefix with group)
+							changed[fk] = fv
+						}
+					}
+				}
+			default:
+				fullKey := k
+				if prefix != "" {
+					fullKey = prefix + k
+				}
+				if va != pv {
+					changed[fullKey] = va
+				}
+			}
+		} else {
+			// New key
+			switch va := v.(type) {
+			case map[string]interface{}:
+				collectChangedFields(va, map[string]interface{}{}, changed, prefix+k+".")
+			case map[string]float32:
+				for fk, fv := range va {
+					changed[fk] = fv
+				}
+			default:
+				fullKey := k
+				if prefix != "" {
+					fullKey = prefix + k
+				}
+				changed[fullKey] = va
+			}
+		}
+	}
+}
+
+// processAndLogChangedYAML writes only changed fields to InfluxDB using the YAML-driven map, recursively.
+func processAndLogChangedYAML(cfg *config.Config, plcData, prev map[string]interface{}, batchWriter *influx.ChannelBatchWriter) {
+	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
+	if measurement == "" {
+		measurement = "status_data"
+	}
+	changed := make(map[string]interface{})
+	collectChangedFields(plcData, prev, changed, "")
+	if len(changed) == 0 {
+		return // nothing to write
+	}
+	batchWriter.AddPoint(measurement, nil, changed, time.Now())
+	log.Printf("Buffered changed fields for InfluxDB (YAML): %s", changed)
+}
+
 // getPollInterval retrieves the polling interval from the configuration.
 func getPollInterval(cfg *config.Config) time.Duration {
 	pollInterval := cfg.Values["PLC_POLL_MS"]
@@ -107,6 +172,32 @@ func processAndLogFull(cfg *config.Config, plcData data.PLCDataMap, batchWriter 
 	log.Println("Buffered full-state write for InfluxDB")
 }
 
+// processAndLogFullYAML writes the full PLC state to InfluxDB using the YAML-driven map.
+func processAndLogFullYAML(cfg *config.Config, plcData map[string]interface{}, batchWriter *influx.ChannelBatchWriter) {
+	measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
+	if measurement == "" {
+		measurement = "status_data"
+	}
+	batchWriter.AddPoint(measurement, nil, plcData, time.Now())
+	log.Println("Buffered full-state write for InfluxDB (YAML)")
+}
+
+// printDataMap recursively prints all fields in the PLC data map, including nested float groups.
+// func printDataMap(m map[string]interface{}, prefix string) {
+// 	for k, v := range m {
+// 		switch val := v.(type) {
+// 		case map[string]float32:
+// 			for fk, fv := range val {
+// 				log.Printf("[DEBUG] %s%s.%s = %v", prefix, k, fk, fv)
+// 			}
+// 		case map[string]interface{}:
+// 			printDataMap(val, prefix+k+".")
+// 		default:
+// 			log.Printf("[DEBUG] %s%s = %v", prefix, k, v)
+// 		}
+// 	}
+// }
+
 // runEthernetIPCycle connects to the PLC via Ethernet/IP and continuously polls for data changes.
 func runEthernetIPCycle(cfg *config.Config, batchWriter *influx.ChannelBatchWriter) {
 	ip := cfg.Values["ETHERNET_IP_ADDRESS"]
@@ -127,21 +218,71 @@ func runEthernetIPCycle(cfg *config.Config, batchWriter *influx.ChannelBatchWrit
 	fullWriteInterval := getFullWriteInterval(cfg)
 	fullWriteTicker := time.NewTicker(fullWriteInterval)
 	defer fullWriteTicker.Stop()
-	var last data.PLCDataMap
+	var last map[string]interface{}
+	yamlPath := "data/architect.yaml"
 	for {
-		plcData := data.LoadFromEthernetIP(cfg, eth)
+		plcData, err := data.LoadFromEthernetIPYAML(cfg, eth, yamlPath)
+		if err != nil {
+			log.Printf("Error loading PLC data from Ethernet/IP YAML: %v", err)
+			time.Sleep(pollInterval)
+			continue
+		}
+		// printDataMap(plcData, "")
 		select {
 		case <-fullWriteTicker.C:
-			processAndLogFull(cfg, plcData, batchWriter)
+			processAndLogFullYAML(cfg, plcData, batchWriter)
 			last = plcData
 		default:
-			if hasChanges(last, plcData) {
-				processAndLogChanged(cfg, plcData, batchWriter, last)
+			if !mapsEqual(last, plcData) {
+				processAndLogChangedYAML(cfg, plcData, last, batchWriter)
 				last = plcData
 			}
 		}
 		time.Sleep(pollInterval)
 	}
+}
+
+// mapsEqual recursively compares two map[string]interface{} for equality, including nested maps.
+func mapsEqual(a, b map[string]interface{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		bv, ok := b[k]
+		if !ok {
+			return false
+		}
+		switch va := v.(type) {
+		case map[string]interface{}:
+			bvMap, ok := bv.(map[string]interface{})
+			if !ok || !mapsEqual(va, bvMap) {
+				return false
+			}
+		case map[string]float32:
+			bvMap, ok := bv.(map[string]float32)
+			if !ok || !float32MapsEqual(va, bvMap) {
+				return false
+			}
+		default:
+			if va != bv {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// float32MapsEqual compares two map[string]float32 for equality.
+func float32MapsEqual(a, b map[string]float32) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if bv, ok := b[k]; !ok || bv != v {
+			return false
+		}
+	}
+	return true
 }
 
 // runModbusCycle connects to the Modbus TCP server and continuously polls for data changes.
@@ -161,7 +302,8 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, batchWriter *in
 	fullWriteInterval := getFullWriteInterval(cfg)
 	fullWriteTicker := time.NewTicker(fullWriteInterval)
 	defer fullWriteTicker.Stop()
-	var last data.PLCDataMap
+	var last map[string]interface{}
+	yamlPath := "data/architect.yaml"
 	for {
 		if len(server.HoldingRegisters) <= end {
 			log.Println("Insufficient register length, skipping cycle")
@@ -169,14 +311,20 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, batchWriter *in
 			continue
 		}
 		readSlice := server.HoldingRegisters[start : end+1]
-		plcData := data.LoadPLCDataMap(cfg, readSlice)
+		plcData, err := data.LoadPLCDataMapFromYAML(yamlPath, readSlice)
+		if err != nil {
+			log.Printf("Error loading PLC data from Modbus YAML: %v", err)
+			time.Sleep(pollInterval)
+			continue
+		}
+		// printDataMap(plcData, "")
 		select {
 		case <-fullWriteTicker.C:
-			processAndLogFull(cfg, plcData, batchWriter)
+			processAndLogFullYAML(cfg, plcData, batchWriter)
 			last = plcData
 		default:
-			if hasChanges(last, plcData) {
-				processAndLogChanged(cfg, plcData, batchWriter, last)
+			if !mapsEqual(last, plcData) {
+				processAndLogChangedYAML(cfg, plcData, last, batchWriter)
 				last = plcData
 			}
 		}
@@ -210,6 +358,32 @@ func main() {
 	for _, field := range boolFields {
 		log.Println(field)
 	}
+
+	// --- Debug: Compare LoadPLCDataMap and LoadPLCDataMapFromYAML ---
+	// Use a dummy register slice of appropriate length (simulate real data)
+	// lengthStr := cfg.Values["ETHERNET_IP_LENGTH"]
+	// length := 128
+	// if lengthStr != "" {
+	// 	if l, err := strconv.Atoi(lengthStr); err == nil {
+	// 		length = l
+	// 	}
+	// }
+	// registers := make([]uint16, length)
+	// // Optionally, fill with test data here if desired
+
+	// // Load using old method
+	// plcStruct := data.LoadPLCDataMap(cfg, registers)
+	// log.Printf("[DEBUG] LoadPLCDataMap output: %+v", plcStruct)
+
+	// // Load using new YAML-driven method
+	// yamlPath := "data/architect.yaml"
+	// plcMap, err := data.LoadPLCDataMapFromYAML(yamlPath, registers)
+	// if err != nil {
+	// 	log.Printf("[DEBUG] LoadPLCDataMapFromYAML error: %v", err)
+	// } else {
+	// 	log.Printf("[DEBUG] LoadPLCDataMapFromYAML output: %+v", plcMap)
+	// }
+	// --- End Debug ---
 
 	if plcSource == "ethernet-ip" {
 		runEthernetIPCycle(cfg, batchWriter)

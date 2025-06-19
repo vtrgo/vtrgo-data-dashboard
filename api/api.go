@@ -11,17 +11,50 @@ import (
 	"vtarchitect/influx"
 )
 
-func collectBooleanFieldNames() []string {
-	empty := data.PLCDataMap{}
-	raw := influx.StructToInfluxFields(empty, "")
+// --- YAML-driven field helpers ---
+
+// GetBooleanFieldNames loads boolean field names from architect.yaml
+func GetBooleanFieldNames() ([]string, error) {
+	mapping, err := data.LoadArchitectYAML()
+	if err != nil {
+		return nil, err
+	}
+	fields := make([]string, 0, len(mapping.BooleanFields))
+	for _, f := range mapping.BooleanFields {
+		fields = append(fields, f.Name)
+	}
+	return fields, nil
+}
+
+// GetFaultFieldNames loads fault field names from architect.yaml
+func GetFaultFieldNames() ([]string, error) {
+	mapping, err := data.LoadArchitectYAML()
+	if err != nil {
+		return nil, err
+	}
+	fields := make([]string, 0, len(mapping.FaultFields))
+	for _, f := range mapping.FaultFields {
+		fields = append(fields, f.Name)
+	}
+	return fields, nil
+}
+
+// GetFloatFieldNames loads all float field names from architect.yaml (flattened)
+func GetFloatFieldNames() ([]string, error) {
+	mapping, err := data.LoadArchitectYAML()
+	if err != nil {
+		return nil, err
+	}
 	fields := make([]string, 0)
-	for k, v := range raw {
-		if _, ok := v.(bool); ok {
-			fields = append(fields, k)
+	for _, group := range mapping.FloatFields {
+		for _, f := range group.Fields {
+			fields = append(fields, f.Name)
 		}
 	}
-	return fields
+	return fields, nil
 }
+
+// ---
 
 func isValidFluxTime(input string) bool {
 	if input == "now()" || (len(input) > 1 && input[0] == '-') {
@@ -54,7 +87,11 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			return
 		}
 
-		fields := collectBooleanFieldNames()
+		fields, err := GetBooleanFieldNames()
+		if err != nil {
+			http.Error(w, "Failed to load boolean field names", http.StatusInternalServerError)
+			return
+		}
 		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 		results, err := client.AggregateBooleanPercentages(measurement, bucket, fields, start, stop)
 		if err != nil {
@@ -65,6 +102,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(results)
 	})
+
 	http.HandleFunc("/api/stats", func(w http.ResponseWriter, r *http.Request) {
 		bucket := r.URL.Query().Get("bucket")
 		if bucket == "" {
@@ -87,12 +125,56 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			return
 		}
 
-		results, err := client.GetStats(bucket, start, stop)
+		// Load field lists from YAML
+		arch, err := data.LoadArchitectYAML()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Failed to load architect.yaml: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		booleanFields := make([]string, 0, len(arch.BooleanFields))
+		for _, f := range arch.BooleanFields {
+			booleanFields = append(booleanFields, f.Name)
+		}
+		faultFields := make([]string, 0, len(arch.FaultFields))
+		for _, f := range arch.FaultFields {
+			faultFields = append(faultFields, f.Name)
+		}
+		floatFields := make([]string, 0)
+		for _, group := range arch.FloatFields {
+			for _, f := range group.Fields {
+				floatFields = append(floatFields, f.Name)
+			}
+		}
+
+		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
+		if measurement == "" {
+			measurement = "status_data"
+		}
+
+		// Aggregate booleans (percentage true)
+		boolResults, err := client.AggregateBooleanPercentages(measurement, bucket, booleanFields, start, stop)
+		if err != nil {
+			http.Error(w, "Boolean aggregation error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// Aggregate faults (count true)
+		faultResults, err := client.AggregateFaultCounts(measurement, bucket, faultFields, start, stop)
+		if err != nil {
+			http.Error(w, "Fault aggregation error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// Aggregate floats (mean)
+		floatResults, err := client.AggregateFloatMeans(measurement, bucket, floatFields, start, stop)
+		if err != nil {
+			http.Error(w, "Float aggregation error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		results := map[string]interface{}{
+			"booleans": boolResults,
+			"faults":   faultResults,
+			"floats":   floatResults,
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(results)
 	})

@@ -162,3 +162,24 @@ func LoadFromEthernetIP(cfg *config.Config, plc *PLC) PLCDataMap {
 
 	return LoadPLCDataMap(cfg, rawData)
 }
+
+func LoadFromEthernetIPYAML(cfg *config.Config, plc *PLC, yamlPath string) (map[string]interface{}, error) {
+	tag := "EthernetDataWrite"
+	length := 100 // default fallback
+	if lstr, ok := cfg.Values["ETHERNET_IP_LENGTH"]; ok {
+		if l, err := strconv.Atoi(lstr); err == nil && l > 0 {
+			length = l
+		}
+	}
+	rawDataAny, err := plc.ReadTag(tag, "[]int", length)
+	if err != nil {
+		log.Printf("Error reading from Ethernet/IP: %v", err)
+		return nil, err
+	}
+	rawData, ok := rawDataAny.([]uint16)
+	if !ok {
+		log.Printf("Invalid data type returned from Ethernet/IP read")
+		return nil, err
+	}
+	return LoadPLCDataMapFromYAML(yamlPath, rawData)
+}

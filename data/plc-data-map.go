@@ -207,3 +207,17 @@ func LoadPLCDataMapFromYAML(yamlPath string, registers []uint16) (map[string]int
 
 	return result, nil
 }
+
+// LoadArchitectYAML loads and parses architect.yaml and returns the parsed ArchitectYAML struct.
+func LoadArchitectYAML() (*ArchitectYAML, error) {
+	data, err := os.ReadFile("data/architect.yaml")
+	if err != nil {
+		return nil, err
+	}
+	var arch ArchitectYAML
+	err = yaml.Unmarshal(data, &arch)
+	if err != nil {
+		return nil, err
+	}
+	return &arch, nil
+}

@@ -450,3 +450,68 @@ func (c *Client) GetStats(bucket, start, stop string) (*StatsResult, error) {
 		Vibration:   vibrationData,
 	}, nil
 }
+
+// AggregateFaultCounts sums the number of true values for each fault field in the given time range.
+func (c *Client) AggregateFaultCounts(measurement, bucket string, fields []string, start, stop string) (map[string]float64, error) {
+	if len(fields) == 0 {
+		return map[string]float64{}, nil
+	}
+	var filters []string
+	for _, f := range fields {
+		filters = append(filters, fmt.Sprintf(`r["_field"] == "%s"`, f))
+	}
+	query := fmt.Sprintf(`
+from(bucket: "%s")
+  |> range(start: %s, stop: %s)
+  |> filter(fn: (r) => r["_measurement"] == "%s")
+  |> filter(fn: (r) => %s)
+  |> map(fn: (r) => ({ r with _value: if r._value then 1.0 else 0.0 }))
+  |> group(columns: ["_field"])
+  |> sum()
+`, bucket, start, stop, measurement, strings.Join(filters, " or "))
+
+	res, err := c.queryAPI.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	counts := make(map[string]float64)
+	for res.Next() {
+		field := res.Record().Field()
+		if val, ok := res.Record().Value().(float64); ok {
+			counts[field] = val
+		}
+	}
+	return counts, res.Err()
+}
+
+// AggregateFloatMeans computes the mean value for each float field in the given time range.
+func (c *Client) AggregateFloatMeans(measurement, bucket string, fields []string, start, stop string) (map[string]float64, error) {
+	if len(fields) == 0 {
+		return map[string]float64{}, nil
+	}
+	var filters []string
+	for _, f := range fields {
+		filters = append(filters, fmt.Sprintf(`r["_field"] == "%s"`, f))
+	}
+	query := fmt.Sprintf(`
+from(bucket: "%s")
+  |> range(start: %s, stop: %s)
+  |> filter(fn: (r) => r["_measurement"] == "%s")
+  |> filter(fn: (r) => %s)
+  |> group(columns: ["_field"])
+  |> mean()
+`, bucket, start, stop, measurement, strings.Join(filters, " or "))
+
+	res, err := c.queryAPI.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	means := make(map[string]float64)
+	for res.Next() {
+		field := res.Record().Field()
+		if val, ok := res.Record().Value().(float64); ok {
+			means[field] = val
+		}
+	}
+	return means, res.Err()
+}

@@ -318,94 +318,100 @@ fault_fields:
     - name: FaultBits.FaultArray1.Fault31
       address: 7
       bit: 15
-vibration_fields:
-    - name: VibrationDataFloats[0]
+float_fields:
+    - name: VibrationData[0]
       fields:
-        - name: VibrationData-VibrationDataFloats[0].VibrationX(HighINT)
+        - name: Floats.VibrationData[0].VibrationX(HighINT)
           address: 70
-        - name: VibrationData-VibrationDataFloats[0].VibrationX(LowINT)
+        - name: Floats.VibrationData[0].VibrationX(LowINT)
           address: 71
-        - name: VibrationData-VibrationDataFloats[0].VibrationY(HighINT)
+        - name: Floats.VibrationData[0].VibrationY(HighINT)
           address: 72
-        - name: VibrationData-VibrationDataFloats[0].VibrationY(LowINT)
+        - name: Floats.VibrationData[0].VibrationY(LowINT)
           address: 73
-        - name: VibrationData-VibrationDataFloats[0].VibrationZ(HighINT)
+        - name: Floats.VibrationData[0].VibrationZ(HighINT)
           address: 74
-        - name: VibrationData-VibrationDataFloats[0].VibrationZ(LowINT)
+        - name: Floats.VibrationData[0].VibrationZ(LowINT)
           address: 75
-        - name: VibrationData-VibrationDataFloats[0].Temperature(HighINT)
+        - name: Floats.VibrationData[0].Temperature(HighINT)
           address: 76
-        - name: VibrationData-VibrationDataFloats[0].Temperature(LowINT)
+        - name: Floats.VibrationData[0].Temperature(LowINT)
           address: 77
-    - name: VibrationDataFloats[1]
+    - name: VibrationData[1]
       fields:
-        - name: VibrationData-VibrationDataFloats[1].VibrationX(HighINT)
+        - name: Floats.VibrationData[1].VibrationX(HighINT)
           address: 78
-        - name: VibrationData-VibrationDataFloats[1].VibrationX(LowINT)
+        - name: Floats.VibrationData[1].VibrationX(LowINT)
           address: 79
-        - name: VibrationData-VibrationDataFloats[1].VibrationY(HighINT)
+        - name: Floats.VibrationData[1].VibrationY(HighINT)
           address: 80
-        - name: VibrationData-VibrationDataFloats[1].VibrationY(LowINT)
+        - name: Floats.VibrationData[1].VibrationY(LowINT)
           address: 81
-        - name: VibrationData-VibrationDataFloats[1].VibrationZ(HighINT)
+        - name: Floats.VibrationData[1].VibrationZ(HighINT)
           address: 82
-        - name: VibrationData-VibrationDataFloats[1].VibrationZ(LowINT)
+        - name: Floats.VibrationData[1].VibrationZ(LowINT)
           address: 83
-        - name: VibrationData-VibrationDataFloats[1].Temperature(HighINT)
+        - name: Floats.VibrationData[1].Temperature(HighINT)
           address: 84
-        - name: VibrationData-VibrationDataFloats[1].Temperature(LowINT)
+        - name: Floats.VibrationData[1].Temperature(LowINT)
           address: 85
-    - name: VibrationDataFloats[2]
+    - name: VibrationData[2]
       fields:
-        - name: VibrationData-VibrationDataFloats[2].VibrationX(HighINT)
+        - name: Floats.VibrationData[2].VibrationX(HighINT)
           address: 86
-        - name: VibrationData-VibrationDataFloats[2].VibrationX(LowINT)
+        - name: Floats.VibrationData[2].VibrationX(LowINT)
           address: 87
-        - name: VibrationData-VibrationDataFloats[2].VibrationY(HighINT)
+        - name: Floats.VibrationData[2].VibrationY(HighINT)
           address: 88
-        - name: VibrationData-VibrationDataFloats[2].VibrationY(LowINT)
+        - name: Floats.VibrationData[2].VibrationY(LowINT)
           address: 89
-        - name: VibrationData-VibrationDataFloats[2].VibrationZ(HighINT)
+        - name: Floats.VibrationData[2].VibrationZ(HighINT)
           address: 90
-        - name: VibrationData-VibrationDataFloats[2].VibrationZ(LowINT)
+        - name: Floats.VibrationData[2].VibrationZ(LowINT)
           address: 91
-        - name: VibrationData-VibrationDataFloats[2].Temperature(HighINT)
+        - name: Floats.VibrationData[2].Temperature(HighINT)
           address: 92
-        - name: VibrationData-VibrationDataFloats[2].Temperature(LowINT)
+        - name: Floats.VibrationData[2].Temperature(LowINT)
           address: 93
-    - name: VibrationDataFloats[3]
+    - name: VibrationData[3]
       fields:
-        - name: VibrationData-VibrationDataFloats[3].VibrationX(HighINT)
+        - name: Floats.VibrationData[3].VibrationX(HighINT)
           address: 94
-        - name: VibrationData-VibrationDataFloats[3].VibrationX(LowINT)
+        - name: Floats.VibrationData[3].VibrationX(LowINT)
           address: 95
-        - name: VibrationData-VibrationDataFloats[3].VibrationY(HighINT)
+        - name: Floats.VibrationData[3].VibrationY(HighINT)
           address: 96
-        - name: VibrationData-VibrationDataFloats[3].VibrationY(LowINT)
+        - name: Floats.VibrationData[3].VibrationY(LowINT)
           address: 97
-        - name: VibrationData-VibrationDataFloats[3].VibrationZ(HighINT)
+        - name: Floats.VibrationData[3].VibrationZ(HighINT)
           address: 98
-        - name: VibrationData-VibrationDataFloats[3].VibrationZ(LowINT)
+        - name: Floats.VibrationData[3].VibrationZ(LowINT)
           address: 99
-        - name: VibrationData-VibrationDataFloats[3].Temperature(HighINT)
+        - name: Floats.VibrationData[3].Temperature(HighINT)
           address: 100
-        - name: VibrationData-VibrationDataFloats[3].Temperature(LowINT)
+        - name: Floats.VibrationData[3].Temperature(LowINT)
           address: 101
-    - name: VibrationDataFloats[4]
+    - name: SpeedData[0]
       fields:
-        - name: VibrationData-VibrationDataFloats[4].VibrationX(HighINT)
+        - name: Floats.SpeedData[0].BulkHopperSpeed(LowINT)
           address: 102
-        - name: VibrationData-VibrationDataFloats[4].VibrationX(LowINT)
+        - name: Floats.SpeedData[0].BulkHopperSpeed(HighINT)
           address: 103
-        - name: VibrationData-VibrationDataFloats[4].VibrationY(HighINT)
+    - name: SpeedData[1]
+      fields:
+        - name: Floats.SpeedData[1].CrossConveyorSpeed(LowINT)
           address: 104
-        - name: VibrationData-VibrationDataFloats[4].VibrationY(LowINT)
+        - name: Floats.SpeedData[1].CrossConveyorSpeed(HighINT)
           address: 105
-        - name: VibrationData-VibrationDataFloats[4].VibrationZ(HighINT)
+    - name: SpeedData[2]
+      fields:
+        - name: Floats.SpeedData[2].TransferConveyorSpeed(LowINT)
           address: 106
-        - name: VibrationData-VibrationDataFloats[4].VibrationZ(LowINT)
+        - name: Floats.SpeedData[2].TransferConveyorSpeed(HighINT)
           address: 107
-        - name: VibrationData-VibrationDataFloats[4].Temperature(HighINT)
+    - name: SpeedData[3]
+      fields:
+        - name: Floats.SpeedData[3].OrientationConveyorSpeed(LowINT)
           address: 108
-        - name: VibrationData-VibrationDataFloats[4].Temperature(LowINT)
+        - name: Floats.SpeedData[3].OrientationConveyorSpeed(HighINT)
           address: 109
