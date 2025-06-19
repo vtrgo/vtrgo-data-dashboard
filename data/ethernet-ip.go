@@ -138,31 +138,6 @@ func (plc *PLC) WriteTag(tagName string, tagType string, tagValue interface{}) (
 	return nil, fmt.Errorf("unsupported tag type: %s", tagType)
 }
 
-func LoadFromEthernetIP(cfg *config.Config, plc *PLC) PLCDataMap {
-	tag := "EthernetDataWrite"
-	length := 100 // default fallback
-	if lstr, ok := cfg.Values["ETHERNET_IP_LENGTH"]; ok {
-		if l, err := strconv.Atoi(lstr); err == nil && l > 0 {
-			length = l
-		}
-	}
-	rawDataAny, err := plc.ReadTag(tag, "[]int", length)
-	// log.Printf("Raw EthernetDataWrite data: %v, err: %v", rawDataAny, err)
-
-	if err != nil {
-		log.Printf("Error reading from Ethernet/IP: %v", err)
-		return PLCDataMap{}
-	}
-
-	rawData, ok := rawDataAny.([]uint16)
-	if !ok {
-		log.Printf("Invalid data type returned from Ethernet/IP read")
-		return PLCDataMap{}
-	}
-
-	return LoadPLCDataMap(cfg, rawData)
-}
-
 func LoadFromEthernetIPYAML(cfg *config.Config, plc *PLC, yamlPath string) (map[string]interface{}, error) {
 	tag := "EthernetDataWrite"
 	length := 100 // default fallback

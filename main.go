@@ -20,19 +20,6 @@ import (
 	"github.com/tbrandon/mbserver"
 )
 
-// collectBooleanFieldNames retrieves the names of boolean fields from an empty PLC data map.
-func collectBooleanFieldNames() []string {
-	empty := data.PLCDataMap{}
-	raw := influx.StructToInfluxFields(empty, "")
-	fields := make([]string, 0)
-	for k, v := range raw {
-		if _, ok := v.(bool); ok {
-			fields = append(fields, k)
-		}
-	}
-	return fields
-}
-
 // collectChangedFields recursively collects changed fields into the changed map.
 func collectChangedFields(curr, prev map[string]interface{}, changed map[string]interface{}, prefix string) {
 	for k, v := range curr {
