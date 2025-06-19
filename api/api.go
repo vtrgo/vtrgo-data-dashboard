@@ -153,12 +153,6 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			measurement = "status_data"
 		}
 
-		// Debug: log the actual field names used for queries
-		log.Printf("Boolean fields (query): %+v", booleanFields)
-		log.Printf("Fault fields (query): %+v", faultFields)
-		log.Printf("Float fields (query): %+v", floatFields)
-		log.Printf("Measurement: %s, Bucket: %s, Start: %s, Stop: %s", measurement, bucket, start, stop)
-
 		// Aggregate booleans (percentage true)
 		boolResults, err := client.AggregateBooleanPercentages(measurement, bucket, booleanFields, start, stop)
 		if err != nil {
@@ -177,7 +171,6 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			http.Error(w, "Float aggregation error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		log.Printf("Float aggregation results: %+v", floatResults)
 
 		results := map[string]interface{}{
 			"boolean_percentages": boolResults,
