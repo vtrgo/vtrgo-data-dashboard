@@ -4,10 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	"vtarchitect/config"
@@ -75,45 +72,7 @@ func getCombinedFloatFields(floatFields []struct {
 	return result
 }
 
-func generateBooleanPercentagesFluxQueryFile(csvPath string, yamlCache *data.ArchitectYAML) error {
-	// Compose regex for _field filter from boolean field names
-	fields := make([]string, 0, len(yamlCache.BooleanFields))
-	for _, f := range yamlCache.BooleanFields {
-		fields = append(fields, f.Name)
-	}
-	// Compose regex: ^Field1|^Field2|^Field3
-	regex := "^" + strings.Join(fields, "|^")
-
-	flux := `from(bucket: "vtrFeederData")
-  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
-  |> filter(fn: (r) =>
-    r._measurement == "status_data" and
-    r._field =~ /` + regex + `/
-  )
-  |> keep(columns: ["_time", "_field", "_value"])
-  |> map(fn: (r) => ({ r with _value: if bool(v: r._value) then 1.0 else 0.0 }))
-  |> group(columns: ["_field"])
-  |> mean()
-  |> map(fn: (r) => ({ r with _value: r._value * 100.0 }))
-  |> rename(columns: {_value: "boolean_percentage"})
-`
-	examplesDir := filepath.Join(".", "examples")
-	os.MkdirAll(examplesDir, 0755)
-	return os.WriteFile(filepath.Join(examplesDir, "flux-query-boolean-percentages.iql"), []byte(flux), 0644)
-}
-
 func StartAPIServer(cfg *config.Config, client *influx.Client) {
-	// --- CSV/Flux query file generation on startup ---
-	csvPath := "./your-csv-file.csv" // Change this to your actual CSV path if needed
-	if _, err := os.Stat(csvPath); err == nil {
-		yamlCache := data.GetArchitectYAML()
-		if err := generateBooleanPercentagesFluxQueryFile(csvPath, yamlCache); err != nil {
-			log.Printf("Failed to generate flux query file: %v", err)
-		} else {
-			log.Printf("Generated ./examples/flux-query-boolean-percentages.iql")
-		}
-	}
-
 	http.HandleFunc("/api/percentages", func(w http.ResponseWriter, r *http.Request) {
 		bucket := r.URL.Query().Get("bucket")
 		if bucket == "" {

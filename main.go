@@ -282,6 +282,7 @@ func checkAndConvertCSV() error {
 		return err
 	}
 	log.Printf("[STARTUP] Converted %s to %s and deleted the CSV.", csvPath, yamlPath)
+
 	return nil
 }
 
