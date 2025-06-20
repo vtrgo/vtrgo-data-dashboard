@@ -1,33 +1,63 @@
 ```mermaid
-graph TD
-    subgraph VTR Feeder Equipment
-        PLC["ControlLogix PLC"]
+flowchart TD
+    subgraph Main_Application
+        main_go["main.go"]
+        api["api/"]
+        data["data/"]
+        influx["influx/"]
+        tools["tools/csv-to-yaml"]
+        architect_yaml["architect.yaml"]
     end
 
-    subgraph Debian PC
-        PC_App["Golang Application <br> with REST API"] --> InfluxDB["InfluxDB <br> Time-series Database"]
+    subgraph PLC
+        plc_conn["ModbusTCP <br> or <br> Ethernet/IP"]
     end
 
-    subgraph STM Microcontroller
-        NUCLEO["NUCLEO-H755ZI-Q <br> (Mongoose Library) <br> ModbusTCP Server"]
-        NFC_Board["X-NUCLEO-NFC07A1"]
+    subgraph InfluxDB
+        influxdb["InfluxDB"]
     end
 
-    subgraph User Interface
-        Smartphone["NFC-enabled Smartphone <br> NFC Reader App"]
+    subgraph Web_Interface
+        web_config["Data Dashboard <br> and <br> Configuration "]
     end
 
-    PLC -- "Ethernet/IP or Modbus/TCP" --> PC_App
-    InfluxDB -- "Reads / Writes" --> PC_App
-    PC_App -- "Ethernet HTTP" --> NUCLEO
-    PLC -- "Modbus/TCP" --> NUCLEO
-    NUCLEO -- "I2C/SPI" --> NFC_Board
-    NFC_Board -- "NFC Field" --> Smartphone
+    subgraph Microcontroller
+        microcontroller["NUCLEO-H755ZI-Q <br> (Mongoose Library) <br> ModbusTCP Server"]
+        NFC["X-NUCLEO-NFC07A1"]
+    end
 
+    subgraph User
+        android["Android or IOS <br>Web Application"]
+    end
+
+    main_go --> tools
+    main_go --> influx
+    main_go --> api
+    main_go --> data
+
+    data <-- "PLC_POLL_MS" --> plc_conn
+    data --> web_config
+    api --> microcontroller
+    api <--> data
+
+    influxdb <-- "INFLUXDB_URL" --> influx
+    influx <--> data
+    influx --> api
+
+    tools --> architect_yaml
+    architect_yaml --> data
+    architect_yaml --> influx
+
+    microcontroller -- "I2C/SPI" --> NFC
+    NFC --> User
+
+    web_config --> tools
+
+    style Main_Application fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style PLC fill:#000,stroke:#fff,color:#fff,stroke-width:2px
-    style PC_App fill:#000,stroke:#fff,color:#fff,stroke-width:2px
+    style Web_Interface fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style InfluxDB fill:#000,stroke:#fff,color:#fff,stroke-width:2px
-    style NUCLEO fill:#000,stroke:#fff,color:#fff,stroke-width:2px
-    style NFC_Board fill:#000,stroke:#fff,color:#fff,stroke-width:2px
-    style Smartphone fill:#000,stroke:#fff,color:#fff,stroke-width:2px
+    style Microcontroller fill:#000,stroke:#fff,color:#fff,stroke-width:2px
+    style NFC fill:#000,stroke:#fff,color:#fff,stroke-width:2px
+    style User fill:#000,stroke:#fff,color:#fff,stroke-width:2px
 ```
