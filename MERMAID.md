@@ -1,12 +1,12 @@
 ```mermaid
 flowchart TD
-    subgraph Main_Application
-        main_go["main.go"]
-        api["api/"]
-        data["data/"]
-        influx["influx/"]
-        tools["tools/csv-to-yaml"]
-        architect_yaml["architect.yaml"]
+    subgraph Architect["VTR Data Collection"]
+        main_go["./main.go"]
+        api["api/api.go"]
+        data["data/plc-data-map.go"]
+        influx["influx/influx.go"]
+        tools["tools/csv-to-yaml.go"]
+        architect_yaml["data/architect.yaml"]
     end
 
     subgraph PLC
@@ -30,16 +30,16 @@ flowchart TD
         android["Android or IOS <br>Web Application"]
     end
 
-    main_go --> tools
-    main_go --> influx
-    main_go --> api
-    main_go --> data
+    main_go <-.-> tools
+    main_go <-.-> influx
+    main_go <-.-> api
+    main_go <-.-> data
 
     data <-- "PLC_POLL_MS" --> plc_conn
     data --> api
 
-    api --> microcontroller
-    api --> web_config
+    api -- "HTTP client" --> microcontroller
+    api -- "HTTP client" --> web_config
 
     influxdb <-- "INFLUXDB_URL" --> influx
     influx <--> data
@@ -54,13 +54,14 @@ flowchart TD
 
     NFC --> User
 
-    web_config --> tools
+    web_config -- "CSV Upload" --> tools
 
-    style Main_Application fill:#000,stroke:#fff,color:#fff,stroke-width:2px
+    style Architect fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style PLC fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style Web_Interface fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style InfluxDB fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style Microcontroller fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style NFC fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style User fill:#000,stroke:#fff,color:#fff,stroke-width:2px
+    style architect_yaml fill:#fff, color:#000,stroke-width:2px
 ```
