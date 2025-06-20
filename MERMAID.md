@@ -8,6 +8,7 @@ flowchart TD
         tools["tools/csv-to-yaml.go"]
         config["config/config.go"]
         architect_yaml["architect.yaml"]
+        go_import_tags_csv["go-import-tag.csv"]
     end
 
     subgraph PLC
@@ -19,15 +20,15 @@ flowchart TD
     end
 
     subgraph Web_Interface
-        web_config["Data Dashboard <br> and <br> CSV Upload "]
+        web_config["CSV Upload <br> and <br> Data Dashboard"]
     end
 
-    subgraph Microcontroller
+    subgraph Microcontroller["STM Microcontroller"]
         microcontroller["NUCLEO-H755ZI-Q <br> (Mongoose Library) <br> ModbusTCP Server"]
         NFC["X-NUCLEO-NFC07A1"]
     end
 
-    subgraph User
+    subgraph User["User Application"]
         android["Android or IOS <br>Web Application"]
     end
 
@@ -50,7 +51,8 @@ flowchart TD
     microcontroller -- "I2C/SPI" --> NFC
     InfluxDB <-- "INFLUXDB_URL" --> influx
     NFC --> User
-    Web_Interface -- "go-import-tags.csv" --> tools
+    Web_Interface --> go_import_tags_csv
+    go_import_tags_csv --> tools
 
     style Architect fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style PLC fill:#000,stroke:#fff,color:#fff,stroke-width:2px
@@ -60,4 +62,5 @@ flowchart TD
     style NFC fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style User fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style architect_yaml fill:#fff, color:#000,stroke-width:2px
+    style go_import_tags_csv fill:#fff, color:#000,stroke-width:2px
 ```
