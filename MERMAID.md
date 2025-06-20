@@ -1,6 +1,6 @@
 ```mermaid
 flowchart TD
-    subgraph Architect["VTR Data Collection"]
+    subgraph Architect["VTArchitect"]
         main_go["./main.go"]
         api["api/api.go"]
         data["data/plc-data-map.go"]
