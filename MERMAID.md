@@ -6,7 +6,8 @@ flowchart TD
         data["data/plc-data-map.go"]
         influx["influx/influx.go"]
         tools["tools/csv-to-yaml.go"]
-        architect_yaml["data/architect.yaml"]
+        config["config/config.go"]
+        architect_yaml["architect.yaml"]
     end
 
     subgraph PLC
@@ -18,7 +19,7 @@ flowchart TD
     end
 
     subgraph Web_Interface
-        web_config["Data Dashboard <br> and <br> Configuration "]
+        web_config["Data Dashboard <br> and <br> CSV Upload "]
     end
 
     subgraph Microcontroller
@@ -30,31 +31,26 @@ flowchart TD
         android["Android or IOS <br>Web Application"]
     end
 
-    main_go <-.-> tools
-    main_go <-.-> influx
-    main_go <-.-> api
-    main_go <-.-> data
-
-    data <-- "PLC_POLL_MS" --> plc_conn
+    config -.-> influx
+    config -.-> data
+    config -.-> api
+    main_go -.-> config
+    main_go -.-> tools
+    main_go -.-> influx
+    main_go -.-> api
+    main_go -.-> data
     data --> api
-
-    api -- "HTTP client" --> microcontroller
-    api -- "HTTP client" --> web_config
-
-    influxdb <-- "INFLUXDB_URL" --> influx
-    influx <--> data
+    data <-- "PLC_POLL_MS" --> PLC
+    api -- "HTTP client" --> Microcontroller
+    api -- "HTTP client" --> Web_Interface
     influx --> api
-
     tools --> architect_yaml
-
     architect_yaml --> data
     architect_yaml --> influx
-
     microcontroller -- "I2C/SPI" --> NFC
-
+    InfluxDB <-- "INFLUXDB_URL" --> influx
     NFC --> User
-
-    web_config -- "CSV Upload" --> tools
+    Web_Interface -- "go-import-tags.csv" --> tools
 
     style Architect fill:#000,stroke:#fff,color:#fff,stroke-width:2px
     style PLC fill:#000,stroke:#fff,color:#fff,stroke-width:2px
