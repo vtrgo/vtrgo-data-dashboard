@@ -36,19 +36,22 @@ flowchart TD
     main_go --> data
 
     data <-- "PLC_POLL_MS" --> plc_conn
-    data --> web_config
+    data --> api
+
     api --> microcontroller
-    api <--> data
+    api --> web_config
 
     influxdb <-- "INFLUXDB_URL" --> influx
     influx <--> data
     influx --> api
 
     tools --> architect_yaml
+
     architect_yaml --> data
     architect_yaml --> influx
 
     microcontroller -- "I2C/SPI" --> NFC
+
     NFC --> User
 
     web_config --> tools
