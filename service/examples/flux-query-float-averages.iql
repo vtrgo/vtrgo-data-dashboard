@@ -1,0 +1,8 @@
+from(bucket: "vtrFeederData")
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) =>
+    r._measurement == "status_data" and r._field =~ /^Floats/
+  )
+  |> group(columns: ["_field"])
+  |> mean()
+  |> rename(columns: {_value: "float_average"})
