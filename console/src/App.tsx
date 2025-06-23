@@ -1,34 +1,93 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from 'react'
+import { Bar } from 'react-chartjs-2'
+import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend
+)
+
+
+type StatsResponse = {
+  boolean_percentages: Record<string, number>
+  fault_counts: Record<string, number>
+  float_averages: Record<string, number>
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [data, setData] = useState<StatsResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchStats = () => {
+      fetch('/api/stats?start=-5m')
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch stats')
+          return res.json()
+        })
+        .then(setData)
+        .catch((err) => setError(err.message))
+    }
+
+    fetchStats() // initial load
+    const interval = setInterval(fetchStats, 5000) // refresh every 5s
+
+    return () => clearInterval(interval)
+  }, [])
+
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div style={{ padding: '2rem' }}>
+      <h1>VTR Dashboard</h1>
+      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {!data && !error && <p>Loading...</p>}
+
+      {data && (
+        <div>
+          <h2>Boolean Percentages</h2>
+          <ul>
+            {Object.entries(data.boolean_percentages).map(([k, v]) => (
+              <li key={k}>{k}: {v.toFixed(1)}%</li>
+            ))}
+          </ul>
+
+          <h2>Fault Counts</h2>
+          <ul>
+            {Object.entries(data.fault_counts).map(([k, v]) => (
+              <li key={k}>{k}: {v}</li>
+            ))}
+          </ul>
+
+          <h2>Float Averages</h2>
+            <Bar
+              data={{
+                labels: Object.keys(data.float_averages),
+                datasets: [
+                  {
+                    label: 'Float Averages',
+                    data: Object.values(data.float_averages),
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { display: false },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                  },
+                },
+              }}
+            />
+
+        </div>
+      )}
+    </div>
   )
 }
 
