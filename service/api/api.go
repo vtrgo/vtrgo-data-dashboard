@@ -181,6 +181,9 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		json.NewEncoder(w).Encode(results)
 	})
 
+	// Serve the static console files
+	http.Handle("/", http.FileServer(http.Dir("../console/dist")))
+
 	log.Println("API server listening on :8080")
 	http.ListenAndServe(":8080", nil)
 }
