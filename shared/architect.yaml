@@ -170,7 +170,7 @@ float_fields:
       address: 26
     - name: Floats.OrientationSectionDrive.Temperature(LowINT)
       address: 27
-    - name: Floats.SpeedData[0].AirTrackBlowerSpeed(HighINT)
+    - name: Floats.AirTrackBlower.Speed(HighINT)
       address: 28
-    - name: Floats.SpeedData[0].AirTrackBlowerSpeed(LowINT)
+    - name: Floats.AirTrackBlower.Speed(LowINT)
       address: 29
