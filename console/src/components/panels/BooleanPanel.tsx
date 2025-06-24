@@ -2,14 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatKey } from "@/utils/textFormat";
 
 type BooleanPanelProps = {
-  booleans: Record<string, number>;
-  timeRangeLabel: string;
+  title: string;
+  values: Record<string, number>;
 };
 
-export function BooleanPanel({ booleans, timeRangeLabel }: BooleanPanelProps) {
-  const entries = Object.entries(booleans)
-    .sort(([, a], [, b]) => (b as number) - (a as number))
-    .filter(([k]) => !k.startsWith("FaultBits."));
+export function BooleanPanel({ title, values }: BooleanPanelProps) {
+  const entries = Object.entries(values).sort(([, a], [, b]) => (b as number) - (a as number));
 
   if (!entries.length) return null;
 
@@ -17,7 +15,7 @@ export function BooleanPanel({ booleans, timeRangeLabel }: BooleanPanelProps) {
     <Card className="bg-[url('/textures/paper-fiber.png')] border border-neutral-300 shadow-inner font-serif">
       <CardHeader className="p-5 pb-2 border-b border-dashed border-neutral-300">
         <CardTitle className="text-base font-black uppercase tracking-widest text-black">
-          Boolean True % for the {timeRangeLabel}
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-5 pt-3">

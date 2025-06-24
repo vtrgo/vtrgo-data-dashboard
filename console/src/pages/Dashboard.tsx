@@ -14,6 +14,31 @@ function formatSectionTitle(name: string) {
     .trim();
 }
 
+function groupBooleansBySection(booleans: Record<string, number>) {
+  const grouped: Record<string, { title: string; values: Record<string, number> }> = {};
+
+  for (const fullKey in booleans) {
+    // Faults are handled by FaultPanel
+    if (fullKey.startsWith("FaultBits.")) continue;
+
+    const parts = fullKey.split(".");
+    if (parts.length < 2) continue;
+
+    const section = parts[0];
+    const subField = parts.slice(1).join(".");
+
+    if (!grouped[section]) {
+      grouped[section] = {
+        title: formatSectionTitle(section),
+        values: {},
+      };
+    }
+    grouped[section].values[subField] = booleans[fullKey];
+  }
+
+  return grouped;
+}
+
 function groupFloatsBySection(floats: Record<string, number>) {
   const grouped: Record<string, { title: string; values: Record<string, number> }> = {};
 
@@ -42,6 +67,7 @@ export default function Dashboard() {
   const randomQuote = inspirationalQuotes[Math.floor(Math.random() * inspirationalQuotes.length)];
   const timeRangeLabel = describeTimeRange(timeRange.start, timeRange.stop).label;
   const groupedFloats = data ? groupFloatsBySection(data.float_averages || {}) : {};
+  const groupedBooleans = data ? groupBooleansBySection(data.boolean_percentages || {}) : {};
 
   return (
     <div className="min-h-screen bg-[url('/textures/paper-fiber.png')] bg-repeat">
@@ -82,11 +108,13 @@ export default function Dashboard() {
         <main className="p-6 space-y-10">
           <section className="font-serif">
             <h2 className="text-xl uppercase tracking-widest text-neutral-500 mb-4 italic">
-              System Status
+              System Status (% True over {timeRangeLabel})
             </h2>
-            <div className="grid gap-6">
-              <BooleanPanel booleans={data.boolean_percentages || {}} timeRangeLabel={timeRangeLabel} />
-            </div>
+            <PanelGrid>
+              {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
+                <BooleanPanel key={key} title={title} values={values} />
+              ))}
+            </PanelGrid>
           </section>
 
           <section className="font-serif">
