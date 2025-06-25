@@ -38,8 +38,8 @@
 
 ## Vite + React Dashboard (Local Web)
 ### High Priority
-- [ ] Build LAN-accessible dashboard UI with core status panels and visualization
-- [ ] Connect to backend API endpoints for data polling and analytics
+- [x] Build LAN-accessible dashboard UI with core status panels and visualization
+- [x] Connect to backend API endpoints for data polling and analytics
 - [ ] Integrate modular components for system stats, boolean breakdowns, and fault logging
 
 ### Medium Priority
@@ -51,3 +51,12 @@
 - [ ] Polish visual layout and design aesthetics
 - [ ] Add user-adjustable settings (interval, theme, measurement source)
 - [ ] Add context-aware tooltips and glossary for field names
+
+## FUTURE: Multi-PLC Support
+
+- [ ] Centralized PLC Configuration
+- [ ] Concurrent PLC Watchers
+- [ ] InfluxDB Data Tagging
+- [ ] Isolated Error Handling
+- [ ] Dynamic YAML Loading (or Caching)
+- [ ] Modbus Client vs. Server (clarification/implementation)

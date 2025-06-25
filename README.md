@@ -102,7 +102,7 @@ vtarchitect/
 ├── TODO.md
 ├── ...
 │
-├── service/
+├── service/ # Go data service application
 │   ├── main.go
 │   ├── go.mod
 │   ├── api/
@@ -112,8 +112,22 @@ vtarchitect/
 │   ├── tools/
 │   └── ...
 │
-├── console/
-│   └── ...
+├── console/ # React + Vite frontend application
+│   ├── public/
+│   │   ├── textures/
+│   ├── src/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   ├── pages/
+│   │   ├── utils/
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
 │
 └── shared/
     ├── architect.yaml
@@ -131,4 +145,3 @@ go test ./...
 
 ## **License**
 This project is licensed under the MIT License. See the LICENSE file for details.
-
