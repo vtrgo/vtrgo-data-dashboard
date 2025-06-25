@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStats } from "@/hooks/useStats";
 import { PanelGrid } from "@/components/layout/PanelGrid";
 import { BooleanPanel } from "@/components/panels/BooleanPanel";
 import { FaultPanel } from "@/components/panels/FaultPanel";
 import { FloatPanel } from "@/components/panels/FloatPanel";
+import { FloatAreaChartPanel } from "@/components/panels/FloatAreaChartPanel"; // New import
 import { describeTimeRange } from "@/utils/describeTimeRange";
 import { inspirationalQuotes } from "@/utils/quotes";
+import { formatKey } from "@/utils/textFormat"; // Ensure formatKey is imported for dropdown
 
 function formatSectionTitle(name: string) {
   return name
@@ -63,9 +65,19 @@ function groupFloatsBySection(floats: Record<string, number>) {
 
 export default function Dashboard() {
   const [timeRange, setTimeRange] = useState({ start: "-1h", stop: "now()" });
-  const { data, loading } = useStats(timeRange);
+  const [selectedFloatField, setSelectedFloatField] = useState<string | null>(null); // New st
+  // ate for selected float field
+  const { data, loading, error } = useStats(timeRange, 60000); // Auto-refresh in milliseconds
   const randomQuote = inspirationalQuotes[Math.floor(Math.random() * inspirationalQuotes.length)];
   const timeRangeLabel = describeTimeRange(timeRange.start, timeRange.stop).label;
+
+  // Effect to set the initial selectedFloatField once data is loaded
+  useEffect(() => {
+    if (data && data.float_averages && Object.keys(data.float_averages).length > 0 && selectedFloatField === null) {
+      setSelectedFloatField(Object.keys(data.float_averages)[0]);
+    }
+  }, [data, selectedFloatField]);
+
   const groupedFloats = data ? groupFloatsBySection(data.float_averages || {}) : {};
   const groupedBooleans = data ? groupBooleansBySection(data.boolean_percentages || {}) : {};
 
@@ -96,13 +108,43 @@ export default function Dashboard() {
                 <option value="-3w">Last 3 weeks</option>
                 <option value="-1mo">Last 1 month</option>
               </select>
+
+              {/* New float field selection dropdown */}
+              {data && data.float_averages && Object.keys(data.float_averages).length > 0 && (
+                <select
+                  className="bg-[url('/textures/paper-fiber.png')] border px-2 py-2 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring"
+                  onChange={(e) => setSelectedFloatField(e.target.value)}
+                  value={selectedFloatField || ''} // Handle null initial state
+                >
+                  <option value="" disabled>Select a float field</option>
+                  {Object.keys(data.float_averages).map((fieldKey) => (
+                    <option key={fieldKey} value={fieldKey}>{formatKey(fieldKey)}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {loading && <div className="p-4 text-center text-muted-foreground">Loading...</div>}
+      {error && <div className="p-4 text-center text-red-500">Error loading data: {error.message}</div>}
       {!data && !loading && <div className="p-4 text-center text-muted-foreground">No data</div>}
+                {/* New section for the historical float data chart */}
+          {selectedFloatField && (
+            <section className="font-serif">
+              <h2 className="text-xl uppercase tracking-widest text-neutral-500 mb-4 italic">
+                Performance Data
+              </h2>
+              <PanelGrid>
+                <FloatAreaChartPanel
+                  field={selectedFloatField}
+                  start={timeRange.start}
+                  stop={timeRange.stop}
+                />
+              </PanelGrid>
+            </section>
+          )}
 
       {data && (
         <main className="p-6 space-y-10">

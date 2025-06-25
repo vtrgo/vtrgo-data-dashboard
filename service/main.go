@@ -82,7 +82,7 @@ func processAndLogChangedYAML(cfg *config.Config, plcData, prev map[string]inter
 		return // nothing to write
 	}
 	batchWriter.AddPoint(measurement, nil, changed, time.Now())
-	log.Printf("Buffered changed fields for InfluxDB (YAML): %s", changed)
+	log.Printf("INFLUX: Buffered changed fields for InfluxDB: %s", changed)
 }
 
 // getPollInterval retrieves the polling interval from the configuration.
@@ -112,7 +112,7 @@ func processAndLogFullYAML(cfg *config.Config, plcData map[string]interface{}, b
 		measurement = "status_data"
 	}
 	batchWriter.AddPoint(measurement, nil, plcData, time.Now())
-	log.Println("Buffered full-state write for InfluxDB (YAML)")
+	log.Println("INFLUX: Buffered full-state write for InfluxDB")
 }
 
 // runEthernetIPCycle connects to the PLC via Ethernet/IP and continuously polls for data changes.

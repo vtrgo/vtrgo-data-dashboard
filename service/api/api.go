@@ -181,6 +181,46 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		json.NewEncoder(w).Encode(results)
 	})
 
+	http.HandleFunc("/api/float-range", func(w http.ResponseWriter, r *http.Request) {
+		bucket := r.URL.Query().Get("bucket")
+		if bucket == "" {
+			bucket = cfg.Values["INFLUXDB_BUCKET"]
+		}
+
+		field := r.URL.Query().Get("field")
+		if field == "" {
+			http.Error(w, "Missing required 'field' query parameter", http.StatusBadRequest)
+			return
+		}
+
+		start := r.URL.Query().Get("start")
+		if start == "" {
+			start = "-1h"
+		} else if !isValidFluxTime(start) {
+			http.Error(w, "Invalid start time format", http.StatusBadRequest)
+			return
+		}
+
+		stop := r.URL.Query().Get("stop")
+		if stop == "" {
+			stop = "now()"
+		} else if !isValidFluxTime(stop) {
+			http.Error(w, "Invalid stop time format", http.StatusBadRequest)
+			return
+		}
+
+		// Call the InfluxDB client to get the float range data
+		data, err := client.GetFloatRange(bucket, field, start, stop)
+		if err != nil {
+			log.Printf("Error getting float range data for field '%s': %v", field, err)
+			http.Error(w, "Failed to retrieve float range data: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
+	})
+
 	// Serve the static console files
 	http.Handle("/", http.FileServer(http.Dir("../console/dist")))
 

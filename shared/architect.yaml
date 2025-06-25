@@ -1,5 +1,5 @@
 boolean_fields:
-    - name: SystemStatusBits.ControlPowerON
+    - name: SystemStatusBits.ControlPowerOn
       address: 0
       bit: 0
     - name: SystemStatusBits.AutoMode
@@ -11,7 +11,7 @@ boolean_fields:
     - name: SystemStatusBits.SystemIdle
       address: 0
       bit: 3
-    - name: SystemStatusBits.AirPressureOK
+    - name: SystemStatusBits.AirPressureOk
       address: 0
       bit: 4
     - name: SystemStatusBits.SystemFaulted
@@ -62,35 +62,35 @@ boolean_fields:
     - name: LevelStatusBits.HighLevel.Lane8
       address: 4
       bit: 7
-    - name: LevelStatusBits.NotatLowLevel.Lane1
+    - name: LevelStatusBits.NotAtLowLevel.Lane1
       address: 4
       bit: 8
-    - name: LevelStatusBits.NotatLowLevel.Lane2
+    - name: LevelStatusBits.NotAtLowLevel.Lane2
       address: 4
       bit: 9
-    - name: LevelStatusBits.NotatLowLevel.Lane3
+    - name: LevelStatusBits.NotAtLowLevel.Lane3
       address: 4
       bit: 10
-    - name: LevelStatusBits.NotatLowLevel.Lane4
+    - name: LevelStatusBits.NotAtLowLevel.Lane4
       address: 4
       bit: 11
-    - name: LevelStatusBits.NotatLowLevel.Lane5
+    - name: LevelStatusBits.NotAtLowLevel.Lane5
       address: 4
       bit: 12
-    - name: LevelStatusBits.NotatLowLevel.Lane6
+    - name: LevelStatusBits.NotAtLowLevel.Lane6
       address: 4
       bit: 13
-    - name: LevelStatusBits.NotatLowLevel.Lane7
+    - name: LevelStatusBits.NotAtLowLevel.Lane7
       address: 4
       bit: 14
-    - name: LevelStatusBits.NotatLowLevel.Lane8
+    - name: LevelStatusBits.NotAtLowLevel.Lane8
       address: 4
       bit: 15
 fault_fields:
-    - name: FaultBits.AirPressureNotOKFault
+    - name: FaultBits.AirPressureNotOkFault
       address: 6
       bit: 0
-    - name: FaultBits.PLCtoPLCFault
+    - name: FaultBits.PlcToPlcFault
       address: 6
       bit: 1
     - name: FaultBits.BulkElevatorConveyorFault
@@ -174,3 +174,7 @@ float_fields:
       address: 28
     - name: Floats.AirTrackBlower.Speed(LowINT)
       address: 29
+    - name: Floats.Performance.PartsPerMinute(HighINT)
+      address: 30
+    - name: Floats.Performance.PartsPerMinute(LowINT)
+      address: 31

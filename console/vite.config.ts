@@ -8,6 +8,15 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   base: './',
   plugins: [react(), tailwindcss()],
+    build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          recharts: ["recharts"],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

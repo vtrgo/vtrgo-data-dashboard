@@ -515,3 +515,37 @@ from(bucket: "%s")
 	}
 	return means, res.Err()
 }
+
+// GetFloatRange queries a specific float field over a given time range and returns time-value pairs.
+func (c *Client) GetFloatRange(bucket, field, start, stop string) ([]map[string]interface{}, error) {
+	query := fmt.Sprintf(`
+from(bucket: "%s")
+  |> range(start: %s, stop: %s)
+  |> filter(fn: (r) => r["_measurement"] == "status_data" and r["_field"] == "%s")
+  |> keep(columns: ["_time", "_value"])
+`, bucket, start, stop, field)
+
+	res, err := c.queryAPI.Query(context.Background(), query)
+	if err != nil {
+		log.Printf("Error running float range query for field '%s': %v", field, err)
+		return nil, fmt.Errorf("float range query error: %w", err)
+	}
+
+	var data []map[string]interface{}
+	for res.Next() {
+		record := res.Record()
+		row := make(map[string]interface{})
+		// InfluxDB _time is a time.Time object, _value is float64
+		row["time"] = record.Time()
+		row["value"] = record.Value()
+		data = append(data, row)
+	}
+
+	if res.Err() != nil {
+		log.Printf("Error parsing float range query results for field '%s': %v", field, res.Err())
+		return nil, fmt.Errorf("float range parse error: %w", res.Err())
+	}
+
+	log.Printf("Successfully fetched %d points for float field '%s'", len(data), field)
+	return data, nil
+}
