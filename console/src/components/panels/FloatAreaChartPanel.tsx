@@ -16,10 +16,11 @@ interface FloatAreaChartPanelProps {
   field: string;
   start: string;
   stop: string;
+  intervalMs?: number | null; // Add intervalMs to the props interface
 }
 
-export function FloatAreaChartPanel({ field, start, stop }: FloatAreaChartPanelProps) {
-  const { data, loading, error } = useFloatRange(field, { start, stop });
+export function FloatAreaChartPanel({ field, start, stop, intervalMs }: FloatAreaChartPanelProps) {
+  const { data, loading, error } = useFloatRange(field, { start, stop }, intervalMs);
 
   if (loading) {
     return (

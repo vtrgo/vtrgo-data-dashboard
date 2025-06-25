@@ -140,7 +140,8 @@ export default function Dashboard() {
                 <FloatAreaChartPanel
                   field={selectedFloatField}
                   start={timeRange.start}
-                  stop={timeRange.stop}
+                  stop={timeRange.stop} // Pass the same interval to the float chart
+                  intervalMs={60000}
                 />
               </PanelGrid>
             </section>
