@@ -24,9 +24,9 @@ export function FloatAreaChartPanel({ field, start, stop, intervalMs }: FloatAre
 
   if (loading) {
     return (
-      <Card className="col-span-full">
+      <Card className="col-span-full bg-[url('/textures/paper-fiber.png')] bg-repeat">
         <CardHeader>
-          <CardTitle>{formatKey(field)} - Historical Data</CardTitle>
+          <CardTitle>{formatKey(field)} - Performance Data</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Loading historical data...</p>
@@ -37,9 +37,9 @@ export function FloatAreaChartPanel({ field, start, stop, intervalMs }: FloatAre
 
   if (error) {
     return (
-      <Card className="col-span-full">
+      <Card className="col-span-full bg-[url('/textures/paper-fiber.png')] bg-repeat">
         <CardHeader>
-          <CardTitle>{formatKey(field)} - Historical Data</CardTitle>
+          <CardTitle>{formatKey(field)} - Performance Data</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-64 text-red-500">
           <p>Error: {error.message}</p>
@@ -50,9 +50,9 @@ export function FloatAreaChartPanel({ field, start, stop, intervalMs }: FloatAre
 
   if (!data || data.length === 0) {
     return (
-      <Card className="col-span-full">
+      <Card className="col-span-full bg-[url('/textures/paper-fiber.png')] bg-repeat">
         <CardHeader>
-          <CardTitle>{formatKey(field)} - Historical Data</CardTitle>
+          <CardTitle>{formatKey(field)} - Performance Data</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">No data available for this range.</p>
@@ -69,10 +69,10 @@ export function FloatAreaChartPanel({ field, start, stop, intervalMs }: FloatAre
   }));
 
   return (
-    <Card className="col-span-full">
+    <Card className="col-span-full bg-[url('/textures/paper-fiber.png')] bg-repeat">
       <CardHeader>
-        <CardTitle className="text-lg font-medium tracking-tight">
-          {formatKey(field)} - Historical Data ({start} to {stop})
+        <CardTitle className="text-lg font-medium tracking-tight"> {/* Ensure this matches other panel titles */}
+          {formatKey(field)} - Performance Data
         </CardTitle>
       </CardHeader>
       <CardContent>

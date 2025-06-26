@@ -133,9 +133,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {loading && <div className="p-4 text-center text-muted-foreground">Loading...</div>}
-      {error && <div className="p-4 text-center text-red-500">Error loading data: {error.message}</div>}
-      {!data && !loading && <div className="p-4 text-center text-muted-foreground">No data</div>}
+      {loading && <div className="p-4 text-center text-muted-foreground">Loading dashboard data...</div>}
+      {error && <div className="p-4 text-center text-red-500">Error loading dashboard data: {error.message}</div>}
+      {!data && !loading && <div className="p-4 text-center text-muted-foreground">No dashboard data available.</div>}
                 {/* New section for the historical float data chart */}
           {selectedFloatField && (
             <section className="font-serif">
