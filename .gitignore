@@ -32,3 +32,6 @@ vtarchitect
 
 # Custom AI Prompts
 *.prompt
+
+# YAML Files
+*.yaml
