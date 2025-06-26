@@ -83,7 +83,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		if start == "" {
 			start = "-1h"
 		} else if !isValidFluxTime(start) {
-			http.Error(w, "Invalid start time format", http.StatusBadRequest)
+			http.Error(w, "API: Invalid start time format", http.StatusBadRequest)
 			return
 		}
 
@@ -91,13 +91,13 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		if stop == "" {
 			stop = "now()"
 		} else if !isValidFluxTime(stop) {
-			http.Error(w, "Invalid stop time format", http.StatusBadRequest)
+			http.Error(w, "API: Invalid stop time format", http.StatusBadRequest)
 			return
 		}
 
 		fields, err := GetBooleanFieldNames()
 		if err != nil {
-			http.Error(w, "Failed to load boolean field names", http.StatusInternalServerError)
+			http.Error(w, "API: Failed to load boolean field names", http.StatusInternalServerError)
 			return
 		}
 		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
@@ -121,7 +121,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		if start == "" {
 			start = "-1h"
 		} else if !isValidFluxTime(start) {
-			http.Error(w, "Invalid start time format", http.StatusBadRequest)
+			http.Error(w, "API: Invalid start time format", http.StatusBadRequest)
 			return
 		}
 
@@ -129,7 +129,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		if stop == "" {
 			stop = "now()"
 		} else if !isValidFluxTime(stop) {
-			http.Error(w, "Invalid stop time format", http.StatusBadRequest)
+			http.Error(w, "API: Invalid stop time format", http.StatusBadRequest)
 			return
 		}
 
@@ -156,19 +156,19 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		// Aggregate booleans (percentage true)
 		boolResults, err := client.AggregateBooleanPercentages(measurement, bucket, booleanFields, start, stop)
 		if err != nil {
-			http.Error(w, "Boolean aggregation error: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "API: Boolean aggregation error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// Aggregate faults (count true)
 		faultResults, err := client.AggregateFaultCounts(measurement, bucket, faultFields, start, stop)
 		if err != nil {
-			http.Error(w, "Fault aggregation error: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "API: Fault aggregation error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// Aggregate floats (mean)
 		floatResults, err := client.AggregateFloatMeans(measurement, bucket, floatFields, start, stop)
 		if err != nil {
-			http.Error(w, "Float aggregation error: "+err.Error(), http.StatusInternalServerError)
+			http.Error(w, "API: Float aggregation error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -189,7 +189,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 
 		field := r.URL.Query().Get("field")
 		if field == "" {
-			http.Error(w, "Missing required 'field' query parameter", http.StatusBadRequest)
+			http.Error(w, "API: Missing required 'field' query parameter", http.StatusBadRequest)
 			return
 		}
 
@@ -197,7 +197,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		if start == "" {
 			start = "-1h"
 		} else if !isValidFluxTime(start) {
-			http.Error(w, "Invalid start time format", http.StatusBadRequest)
+			http.Error(w, "API: Invalid start time format", http.StatusBadRequest)
 			return
 		}
 
@@ -205,15 +205,15 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		if stop == "" {
 			stop = "now()"
 		} else if !isValidFluxTime(stop) {
-			http.Error(w, "Invalid stop time format", http.StatusBadRequest)
+			http.Error(w, "API: Invalid stop time format", http.StatusBadRequest)
 			return
 		}
 
 		// Call the InfluxDB client to get the float range data
 		data, err := client.GetFloatRange(bucket, field, start, stop)
 		if err != nil {
-			log.Printf("Error getting float range data for field '%s': %v", field, err)
-			http.Error(w, "Failed to retrieve float range data: "+err.Error(), http.StatusInternalServerError)
+			log.Printf("ERROR: Error getting float range data for field '%s': %v", field, err)
+			http.Error(w, "API: Failed to retrieve float range data: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -224,6 +224,6 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 	// Serve the static console files
 	http.Handle("/", http.FileServer(http.Dir("../console/dist")))
 
-	log.Println("API server listening on :8080")
+	log.Println("API: API server listening on :8080")
 	http.ListenAndServe(":8080", nil)
 }

@@ -123,7 +123,7 @@ func runEthernetIPCycle(cfg *config.Config, batchWriter *influx.ChannelBatchWrit
 	for {
 		err := eth.Connect()
 		if err != nil {
-			log.Printf("PLC connection failed, retrying in 5 seconds: %v", err)
+			log.Printf("DATA: PLC connection failed, retrying in 5 seconds: %v", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -140,11 +140,10 @@ func runEthernetIPCycle(cfg *config.Config, batchWriter *influx.ChannelBatchWrit
 	for {
 		plcData, err := data.LoadFromEthernetIPYAML(cfg, eth, yamlPath)
 		if err != nil {
-			log.Printf("Error loading PLC data from Ethernet/IP YAML: %v", err)
+			log.Printf("DATA:Error loading PLC data from Ethernet/IP YAML: %v", err)
 			time.Sleep(pollInterval)
 			continue
 		}
-		// printDataMap(plcData, "")
 		select {
 		case <-fullWriteTicker.C:
 			processAndLogFullYAML(cfg, plcData, batchWriter)
@@ -208,11 +207,11 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, batchWriter *in
 	endStr := cfg.Values["MODBUS_REGISTER_END"]
 	start, err := strconv.Atoi(startStr)
 	if err != nil {
-		log.Fatalf("Invalid MODBUS_REGISTER_START: %v", err)
+		log.Fatalf("FATAL: Invalid MODBUS_REGISTER_START: %v", err)
 	}
 	end, err := strconv.Atoi(endStr)
 	if err != nil {
-		log.Fatalf("Invalid MODBUS_REGISTER_END: %v", err)
+		log.Fatalf("FATAL: Invalid MODBUS_REGISTER_END: %v", err)
 	}
 
 	pollInterval := getPollInterval(cfg)
@@ -223,18 +222,17 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, batchWriter *in
 	yamlPath := "../shared/architect.yaml"
 	for {
 		if len(server.HoldingRegisters) <= end {
-			log.Println("Insufficient register length, skipping cycle")
+			log.Println("DATA: Insufficient register length, skipping cycle")
 			time.Sleep(5 * time.Second)
 			continue
 		}
 		readSlice := server.HoldingRegisters[start : end+1]
 		plcData, err := data.LoadPLCDataMapFromYAML(yamlPath, readSlice)
 		if err != nil {
-			log.Printf("Error loading PLC data from Modbus YAML: %v", err)
+			log.Printf("ERROR: Error loading PLC data from Modbus YAML: %v", err)
 			time.Sleep(pollInterval)
 			continue
 		}
-		// printDataMap(plcData, "")
 		select {
 		case <-fullWriteTicker.C:
 			processAndLogFullYAML(cfg, plcData, batchWriter)
@@ -254,19 +252,19 @@ func checkAndConvertCSV() error {
 	sharedDir := "../shared"
 	yamlPath := filepath.Join(sharedDir, "architect.yaml")
 
-	log.Println("[STARTUP] Checking for CSV file in shared directory...")
+	log.Println("STARTUP: Checking for CSV file in shared directory...")
 	files, err := filepath.Glob(filepath.Join(sharedDir, "*.csv"))
 	if err != nil {
 		log.Printf("[ERROR] Could not search for CSV: %v", err)
 		return err
 	}
 	if len(files) == 0 {
-		log.Println("[STARTUP] No CSV file found. Skipping conversion.")
+		log.Println("STARTUP: No CSV file found. Skipping conversion.")
 		return nil // No CSV to process
 	}
 
 	csvPath := files[0] // Use the first CSV found
-	log.Printf("[STARTUP] Found CSV: %s. Converting to YAML...", csvPath)
+	log.Printf("STARTUP: Found CSV: %s. Converting to YAML...", csvPath)
 	cmd := exec.Command("go", "run", filepath.Join(sharedDir, "csv-to-yaml.go"), csvPath, yamlPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -275,12 +273,12 @@ func checkAndConvertCSV() error {
 		return err
 	}
 
-	log.Printf("[STARTUP] Conversion complete. Deleting CSV: %s", csvPath)
+	log.Printf("STARTUP: Conversion complete. Deleting CSV: %s", csvPath)
 	if err := os.Remove(csvPath); err != nil {
 		log.Printf("[ERROR] Could not delete CSV: %v", err)
 		return err
 	}
-	log.Printf("[STARTUP] Converted %s to %s and deleted the CSV.", csvPath, yamlPath)
+	log.Printf("STARTUP: Converted %s to %s and deleted the CSV.", csvPath, yamlPath)
 
 	return nil
 }
@@ -288,27 +286,27 @@ func checkAndConvertCSV() error {
 func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("FATAL: Failed to load config: %v", err)
 	}
 
-	log.Println("[STARTUP] Checking for CSV and converting to YAML if present...")
+	log.Println("STARTUP: Checking for CSV and converting to YAML if present...")
 	if err := checkAndConvertCSV(); err != nil {
-		log.Fatalf("CSV to YAML conversion failed: %v", err)
+		log.Fatalf("FATAL: CSV to YAML conversion failed: %v", err)
 	}
 
-	log.Println("[STARTUP] Loading and caching architect.yaml...")
+	log.Println("STARTUP: Loading and caching architect.yaml...")
 	err = data.LoadAndCacheArchitectYAML("../shared/architect.yaml")
 	if err != nil {
-		log.Fatalf("Failed to load architect.yaml: %v", err)
+		log.Fatalf("FATAL: Failed to load architect.yaml: %v", err)
 	}
-	log.Println("[STARTUP] architect.yaml loaded and cached successfully.")
+	log.Println("STARTUP: architect.yaml loaded and cached successfully.")
 
 	plcSource := cfg.Values["PLC_DATA_SOURCE"]
-	log.Printf("PLC data source: %s", plcSource)
+	log.Printf("STARTUP: PLC data source: %s", plcSource)
 
 	influxClient, err := influx.NewClient(cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to InfluxDB: %v", err)
+		log.Fatalf("FATAL: Failed to connect to InfluxDB: %v", err)
 	}
 	defer influxClient.Close()
 
@@ -327,10 +325,10 @@ func main() {
 		}
 		err := server.ListenTCP("0.0.0.0:" + port)
 		if err != nil {
-			log.Fatalf("Failed to start Modbus server: %v", err)
+			log.Fatalf("FATAL: Failed to start Modbus server: %v", err)
 		}
 		defer server.Close()
-		log.Printf("Modbus server listening on port %s", port)
+		log.Printf("DATA: Modbus server listening on port %s", port)
 
 		runModbusCycle(cfg, server, batchWriter)
 	}
