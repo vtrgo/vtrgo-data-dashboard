@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useStats } from "@/hooks/useStats";
 import { PanelGrid } from "@/components/layout/PanelGrid";
 import { BooleanPanel } from "@/components/panels/BooleanPanel";
@@ -78,8 +78,14 @@ export default function Dashboard() {
     }
   }, [data, selectedFloatField]);
 
-  const groupedFloats = data ? groupFloatsBySection(data.float_averages || {}) : {};
-  const groupedBooleans = data ? groupBooleansBySection(data.boolean_percentages || {}) : {};
+  const groupedFloats = useMemo(
+    () => (data ? groupFloatsBySection(data.float_averages || {}) : {}),
+    [data]
+  );
+  const groupedBooleans = useMemo(
+    () => (data ? groupBooleansBySection(data.boolean_percentages || {}) : {}),
+    [data]
+  );
 
   return (
     <div className="min-h-screen bg-[url('/textures/paper-fiber.png')] bg-repeat">
