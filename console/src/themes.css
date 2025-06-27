@@ -1,0 +1,121 @@
+/* === DEFAULT THEME === */
+.theme-default .vtr-title {
+  color: #111;
+  background: none;
+  font-family: 'Times New Roman', serif;
+  text-shadow: 1px 1px 0 #ccc;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  animation: none;
+}
+
+/* === Synthwave === */
+.theme-synthwave .vtr-title {
+  background-image: linear-gradient(90deg, #ff00cc, #3333ff);
+  background-size: 300% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* === Volcano === */
+.theme-volcano .vtr-title {
+  color: #ff4500;
+  text-shadow: 0 0 4px #ff6347, 0 0 12px #ff8c00;
+}
+
+/* === Galaxy === */
+.theme-galaxy .vtr-title {
+  background-image: radial-gradient(circle at center, #ffffff, #7f00ff, #000000);
+  background-size: 400% 400%;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+/* === Terminal === */
+.theme-terminal .vtr-title {
+  font-family: monospace;
+  color: #00ff00;
+  background: black;
+  text-shadow: 0 0 1px #00ff00;
+}
+
+/* === Vaporwave === */
+.theme-vaporwave .vtr-title {
+  background-image: linear-gradient(to right, #ff9a9e, #fad0c4, #fad0c4, #ffdde1);
+  background-size: 300% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 60s ease-in-out infinite;
+}
+
+/* === Lightning === */
+.theme-lightning .vtr-title {
+  color: #fef08a;
+  text-shadow: 0 0 6px #facc15, 0 0 20px #fde047;
+  animation: pulseGlow 1.2s ease-in-out infinite;
+}
+
+/* === Hologram === */
+.theme-hologram .vtr-title {
+  color: #0ff;
+  text-shadow: 1px 0 red, -1px 0 blue;
+  animation: flicker 3s linear infinite;
+}
+
+/* === Ice === */
+.theme-ice .vtr-title {
+  color: #aaf0ff;
+  text-shadow: 0 0 6px #ccffff, 0 0 10px #e0ffff;
+}
+
+/* === Industrial === */
+.theme-industrial .vtr-title {
+  color: #cccccc;
+  background: linear-gradient(to right, #555555, #888888);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* === Broadcast === */
+.theme-broadcast .vtr-title {
+  color: #ffffff;
+  text-shadow: 2px 0 red, -2px 0 cyan;
+  animation: glitch 1.2s linear infinite;
+}
+
+/* === Shared Keyframes === */
+@keyframes shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    text-shadow: 0 0 4px #facc15;
+  }
+  50% {
+    text-shadow: 0 0 12px #fde047;
+  }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+  75% { opacity: 0.8; }
+}
+
+@keyframes glitch {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-1px); }
+  40% { transform: translateX(1px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+  100% { transform: translateX(0); }
+}

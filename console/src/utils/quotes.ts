@@ -1,3 +1,4 @@
+// filename: console/src/utils/quotes.ts
 export const inspirationalQuotes = [
   "Efficiency is doing better what is already being done.",
   "Quality systems produce great results.",

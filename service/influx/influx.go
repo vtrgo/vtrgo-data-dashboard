@@ -418,6 +418,6 @@ func inferWindowSize(start, stop string) string {
 	case strings.HasPrefix(start, "-1mo"):
 		return "5m"
 	default:
-		return "1m" // fallback for short or malformed inputs
+		return "5m" // fallback for short or malformed inputs
 	}
 }
