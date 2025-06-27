@@ -360,12 +360,15 @@ from(bucket: "%s")
 
 // GetFloatRange queries a specific float field over a given time range and returns time-value pairs.
 func (c *Client) GetFloatRange(bucket, field, start, stop string) ([]map[string]interface{}, error) {
+	window := inferWindowSize(start, stop) // 👈 new logic here
+
 	query := fmt.Sprintf(`
 from(bucket: "%s")
   |> range(start: %s, stop: %s)
   |> filter(fn: (r) => r["_measurement"] == "status_data" and r["_field"] == "%s")
+  |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
   |> keep(columns: ["_time", "_value"])
-`, bucket, start, stop, field)
+`, bucket, start, stop, field, window)
 
 	res, err := c.queryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -376,18 +379,45 @@ from(bucket: "%s")
 	var data []map[string]interface{}
 	for res.Next() {
 		record := res.Record()
-		row := make(map[string]interface{})
-		// InfluxDB _time is a time.Time object, _value is float64
-		row["time"] = record.Time()
-		row["value"] = record.Value()
+		row := map[string]interface{}{
+			"time":  record.Time(),
+			"value": record.Value(),
+		}
 		data = append(data, row)
 	}
-
 	if res.Err() != nil {
 		log.Printf("ERROR: Error parsing float range query results for field '%s': %v", field, res.Err())
 		return nil, fmt.Errorf("ERROR: Float range parse error: %w", res.Err())
 	}
-
 	log.Printf("INFLUX: Successfully fetched %d points for float field '%s'", len(data), field)
 	return data, nil
+}
+
+func inferWindowSize(start, stop string) string {
+	switch {
+	case strings.HasPrefix(start, "-1h"):
+		return "1s"
+	case strings.HasPrefix(start, "-3h"):
+		return "5s"
+	case strings.HasPrefix(start, "-6h"):
+		return "10s"
+	case strings.HasPrefix(start, "-12h"):
+		return "30s"
+	case strings.HasPrefix(start, "-1d"):
+		return "1m"
+	case strings.HasPrefix(start, "-2d"):
+		return "5m"
+	case strings.HasPrefix(start, "-3d"):
+		return "5m"
+	case strings.HasPrefix(start, "-1w"):
+		return "5m"
+	case strings.HasPrefix(start, "-2w"):
+		return "5m"
+	case strings.HasPrefix(start, "-3w"):
+		return "5m"
+	case strings.HasPrefix(start, "-1mo"):
+		return "5m"
+	default:
+		return "1m" // fallback for short or malformed inputs
+	}
 }
