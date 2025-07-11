@@ -2,8 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -70,6 +73,13 @@ func getCombinedFloatFields(floatFields []struct {
 		}
 	}
 	return result
+}
+
+// respondWithError is a helper to send a JSON error message with a status code.
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"message": message})
 }
 
 func StartAPIServer(cfg *config.Config, client *influx.Client) {
@@ -219,6 +229,61 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(data)
+	})
+
+	http.HandleFunc("/api/upload-csv", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+			return
+		}
+
+		// Limit upload size to 10MB
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			log.Println("API: Error parsing multipart form:", err)
+			respondWithError(w, http.StatusBadRequest, "File is too large (max 10MB).")
+			return
+		}
+
+		file, handler, err := r.FormFile("file")
+		if err != nil {
+			log.Println("API: Error retrieving the file from form-data:", err)
+			respondWithError(w, http.StatusBadRequest, "Error retrieving file. Make sure it's under the 'file' key.")
+			return
+		}
+		defer file.Close()
+
+		log.Printf("API: Uploading File: %s, Size: %d", handler.Filename, handler.Size)
+
+		uploadDir := "../shared"
+		if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+			log.Println("API: Error creating upload directory:", err)
+			respondWithError(w, http.StatusInternalServerError, "Could not create upload directory on server.")
+			return
+		}
+
+		// Sanitize filename to prevent path traversal.
+		safeFilename := filepath.Base(handler.Filename)
+		dstPath := filepath.Join(uploadDir, safeFilename)
+
+		dst, err := os.Create(dstPath)
+		if err != nil {
+			log.Println("API: Error creating the destination file:", err)
+			respondWithError(w, http.StatusInternalServerError, "Could not create file on server.")
+			return
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, file); err != nil {
+			log.Println("API: Error copying file content:", err)
+			respondWithError(w, http.StatusInternalServerError, "Could not save file content.")
+			return
+		}
+
+		log.Printf("API: Successfully saved file to %s", dstPath)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "File '" + safeFilename + "' uploaded successfully.",
+		})
 	})
 
 	// Serve the static console files

@@ -1,4 +1,5 @@
 // console/src/components/ConfigDrawer.tsx
+import { useState } from "react"
 import {
   Drawer,
   DrawerContent,
@@ -28,6 +29,59 @@ type Props = {
     enableTheming,
     setEnableTheming,
   }: Props) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle")
+  const [uploadMessage, setUploadMessage] = useState("")
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0]
+      if (file.type === "text/csv") {
+        setSelectedFile(file)
+        setUploadStatus("idle")
+        setUploadMessage("")
+      } else {
+        setSelectedFile(null)
+        setUploadStatus("error")
+        setUploadMessage("Please select a valid CSV file.")
+      }
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile) return
+
+    setUploadStatus("uploading")
+    setUploadMessage("")
+
+    const formData = new FormData()
+    formData.append("file", selectedFile)
+
+    try {
+      // This endpoint needs to be created on your backend.
+      // It should be configured to save the file to the './shared' directory.
+      const response = await fetch("/api/upload-csv", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "File upload failed")
+      }
+
+      const result = await response.json()
+      setUploadStatus("success")
+      setUploadMessage(result.message || "File uploaded successfully!")
+      setSelectedFile(null) // Clear file input after successful upload
+    } catch (error) {
+      setUploadStatus("error")
+      setUploadMessage(error instanceof Error ? error.message : "An unknown error occurred.")
+    }
+  }
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="p-6 max-w-md ml-auto bg-white border-l shadow-lg">
@@ -65,6 +119,42 @@ type Props = {
               ))}
             </select>
           )}
+
+          {/* File Upload Section */}
+          <div className="space-y-2 pt-4 border-t">
+            <label className="text-sm font-medium">Upload Project CSV</label>
+            <div className="text-sm italic text-muted-foreground">
+              Upload a CSV file to the project's shared folder.
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button asChild variant="outline">
+                <label htmlFor="csvUploader" className="cursor-pointer">
+                  Choose File
+                </label>
+              </Button>
+              <input
+                type="file"
+                id="csvUploader"
+                accept=".csv"
+                onChange={handleFileChange}
+                className="sr-only"
+              />
+              <span className="text-sm text-muted-foreground truncate">
+                {selectedFile ? selectedFile.name : "No file selected"}
+              </span>
+            </div>
+            <Button
+              onClick={handleUpload}
+              disabled={!selectedFile || uploadStatus === "uploading"}
+              className="w-full"
+            >
+              {uploadStatus === "uploading" ? "Uploading..." : "Upload"}
+            </Button>
+            {uploadMessage && (
+              <div className={`text-sm ${uploadStatus === 'error' ? 'text-red-500' : 'text-green-500'}`}>{uploadMessage}</div>
+            )}
+          </div>
+
           <div className="text-sm">
             <strong>PLC Source:</strong> ethernet-ip
           </div>
