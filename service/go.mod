@@ -18,5 +18,5 @@ require (
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/npat-efault/crc16 v0.0.0-20161013170008-4128ccbe47c3 // indirect
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 )
