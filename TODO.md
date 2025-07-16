@@ -59,4 +59,3 @@
 - [ ] InfluxDB Data Tagging
 - [ ] Isolated Error Handling
 - [ ] Dynamic YAML Loading (or Caching)
-- [ ] Modbus Client vs. Server (clarification/implementation)
