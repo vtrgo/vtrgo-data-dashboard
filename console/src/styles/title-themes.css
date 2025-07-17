@@ -15,19 +15,18 @@
   --vtr-theme-accent: #333;
 }
 
-/* === DARK THEME === */
-.theme-bright {
-  --vtr-title-color: #77af46;
-  --vtr-title-bg: none;
-  --vtr-title-font: inherit;
-  --vtr-title-shadow: none;
-  --vtr-title-spacing: normal;
-  --vtr-title-weight: 400;
-  --vtr-title-animation: none;
-  --vtr-theme-primary: #f3f4f6;
-  --vtr-theme-secondary: #ffffff;
-  --vtr-theme-bg: #18181b;
-  --vtr-theme-accent: #6366f1;
+/* === Cosmic Nebula === */
+.theme-cosmic-nebula {
+  --vtr-title-bg: radial-gradient(circle at 50% 50%, #8a2be2 0%, #4b0082 25%, #000080 50%, #000000 100%);
+  --vtr-title-bg-size: 200% 200%;
+  --vtr-title-bg-clip: text;
+  --vtr-title-color: transparent;
+  --vtr-title-shadow: 0 0 10px #8a2be2, 0 0 20px #4b0082;
+  --vtr-title-animation: nebula-drift 15s ease-in-out infinite alternate;
+  --vtr-theme-primary: #8a2be2; /* Blue Violet */
+  --vtr-theme-secondary: #4b0082; /* Indigo */
+  --vtr-theme-bg: #0a001a; /* Very Dark Purple */
+  --vtr-theme-accent: #000080; /* Navy */
 }
 
 /* === Synthwave === */
@@ -145,6 +144,83 @@
   --vtr-theme-accent: #00ffff;
 }
 
+/* === Celestial Harmony === */
+.theme-celestial-harmony {
+  --vtr-title-bg: conic-gradient(from 0deg at 50% 50%,
+    #0a0f2d 0%, #2a0a5e 20%, #4b0082 40%, #8a2be2 60%, #4b0082 80%, #0a0f2d 100%);
+  --vtr-title-bg-size: 300% 300%; /* Larger size for smooth movement */
+  --vtr-title-bg-clip: text;
+  --vtr-title-color: transparent;
+  --vtr-title-shadow: 0 0 15px rgba(138, 43, 226, 0.7),
+                      0 0 25px rgba(75, 0, 130, 0.5),
+                      0 0 35px rgba(42, 10, 94, 0.3);
+  --vtr-title-animation: celestial-swirl 20s linear infinite,
+                         celestial-glow 5s ease-in-out infinite alternate;
+  --vtr-theme-primary: #8a2be2; /* Blue Violet */
+  --vtr-theme-secondary: #4b0082; /* Indigo */
+  --vtr-theme-bg: #05071a; /* Deeper dark */
+  --vtr-theme-accent: #2a0a5e; /* Darker purple */
+}
+
+/* === Quantum Flux === */
+.theme-quantum-flux {
+  --vtr-title-bg: linear-gradient(45deg, #00c6ff, #0072ff, #8e2de2, #4a00e0);
+  --vtr-title-bg-size: 400% 400%;
+  --vtr-title-bg-clip: text;
+  --vtr-title-color: transparent;
+  --vtr-title-shadow: 0 0 10px rgba(0, 198, 255, 0.6),
+                      0 0 20px rgba(142, 45, 226, 0.4);
+  --vtr-title-animation: quantum-flux-animation 8s ease-in-out infinite alternate,
+                         shimmer 12s linear infinite; /* Combine with shimmer for background */
+  --vtr-title-skew: just-awesome 5s ease-in-out infinite;
+  --vtr-theme-primary: #00c6ff; /* Light Blue */
+  --vtr-theme-secondary: #8e2de2; /* Violet */
+  --vtr-theme-bg: #0d001a; /* Very Dark Purple-Blue */
+  --vtr-theme-accent: #0072ff; /* Medium Blue */
+}
+/* === Entropic Glitch === */
+.theme-entropic-glitch {
+  --vtr-title-color: #ff00ff; /* Magenta */
+  --vtr-title-bg: none;
+  --vtr-title-shadow: 0 0 5px #00ffff, 0 0 15px #ff00ff; /* Cyan and Magenta glow */
+  --vtr-title-animation: entropic-glitch 0.5s steps(1, end) infinite;
+  --vtr-theme-primary: #ff00ff;
+  --vtr-theme-secondary: #00ffff;
+  --vtr-theme-bg: #000000;
+  --vtr-theme-accent: #ff00ff;
+}
+
+/* === Cosmic Singularity === */
+.theme-cosmic-singularity {
+  --vtr-title-color: #ffffff;
+  --vtr-title-bg: radial-gradient(circle at center, #000000 0%, #1a0033 20%, #4b0082 50%, #8a2be2 80%, #ffffff 100%);
+  --vtr-title-bg-size: 500% 500%;
+  --vtr-title-bg-clip: text;
+  --vtr-title-color: transparent;
+  --vtr-title-shadow: 0 0 20px rgba(255, 255, 255, 0.8),
+                      0 0 40px rgba(138, 43, 226, 0.6);
+  --vtr-title-animation: singularity-warp 10s ease-in-out infinite alternate,
+                         singularity-pulse 3s ease-in-out infinite;
+  --vtr-theme-primary: #8a2be2;
+  --vtr-theme-secondary: #ffffff;
+  --vtr-theme-bg: #000000;
+  --vtr-theme-accent: #4b0082;
+}
+
+/* === Holographic Echo === */
+.theme-holographic-echo {
+  --vtr-title-color: #ffffff;
+  --vtr-title-bg: none;
+  --vtr-title-shadow: 0 0 5px rgba(0, 255, 255, 0.5),
+                      0 0 10px rgba(255, 0, 255, 0.3),
+                      0 0 15px rgba(0, 255, 0, 0.2);
+  --vtr-title-animation: holographic-echo 4s ease-in-out infinite alternate;
+  --vtr-theme-primary: #00ffff;
+  --vtr-theme-secondary: #ff00ff;
+  --vtr-theme-bg: #111111;
+  --vtr-theme-accent: #00ff00;
+}
+
 /* === Title Styles Using Variables === */
 .vtr-title {
   color: var(--vtr-title-color, #111);
@@ -192,4 +268,171 @@
   60% { transform: translateX(-1px); }
   80% { transform: translateX(1px); }
   100% { transform: translateX(0); }
+}
+
+@keyframes nebula-drift {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+@keyframes celestial-swirl {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+@keyframes celestial-glow {
+  0%, 100% { text-shadow: 0 0 15px rgba(138, 43, 226, 0.7), 0 0 25px rgba(75, 0, 130, 0.5); }
+  50% { text-shadow: 0 0 20px rgba(234, 51, 200, 0.9), 0 0 35px rgba(75, 0, 130, 0.7), 0 0 45px rgba(42, 10, 94, 0.5); }
+}
+
+@keyframes just-awesome {
+  0% { transform: skewY(5deg) scale(1); }
+  50% { transform: skewY(-5deg) scale(1.1); }
+  100% { transform: skewY(5deg) scale(1); }
+}
+
+@keyframes quantum-flux-animation {
+  0% {
+    transform: scale(1) rotate(0deg) translateX(0px);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  25% {
+    transform: scale(1.01) rotate(1.2deg) translateX(1px);
+    opacity: 0.98;
+    filter: blur(0.5px);
+  }
+  50% {
+    transform: scale(0.99) rotate(-1.2deg) translateX(-1px);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  75% {
+    transform: scale(1.01) rotate(1.2deg) translateX(1px);
+    opacity: 0.98;
+    filter: blur(0.5px);
+  }
+  100% {
+    transform: scale(1) rotate(0deg) translateX(0px);
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes entropic-glitch {
+  0% {
+    transform: translate(0, 0) skewX(0deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  10% {
+    transform: translate(-2px, 2px) skewX(5deg);
+    opacity: 0.8;
+    filter: blur(1px);
+  }
+  20% {
+    transform: translate(2px, -2px) skewX(-5deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  30% {
+    transform: translate(-3px, 3px) skewX(8deg);
+    opacity: 0.7;
+    filter: blur(2px);
+  }
+  40% {
+    transform: translate(3px, -3px) skewX(-8deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  50% {
+    transform: translate(0, 0) skewX(0deg);
+    opacity: 0.9;
+    filter: blur(0.5px);
+  }
+  60% {
+    transform: translate(-1px, 1px) skewX(3deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  70% {
+    transform: translate(1px, -1px) skewX(-3deg);
+    opacity: 0.85;
+    filter: blur(1.5px);
+  }
+  80% {
+    transform: translate(-2px, 2px) skewX(6deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  90% {
+    transform: translate(2px, -2px) skewX(-6deg);
+    opacity: 0.9;
+    filter: blur(1px);
+  }
+  100% {
+    transform: translate(0, 0) skewX(0deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes singularity-warp {
+  0% {
+    transform: perspective(500px) rotateX(0deg) rotateY(0deg) scale(1);
+    filter: brightness(1) blur(0px);
+    background-position: 0% 0%;
+  }
+  25% {
+    transform: perspective(500px) rotateX(5deg) rotateY(-5deg) scale(0.98);
+    filter: brightness(1.2) blur(2px);
+    background-position: 25% 25%;
+  }
+  50% {
+    transform: perspective(500px) rotateX(0deg) rotateY(0deg) scale(1.02);
+    filter: brightness(0.8) blur(0px);
+    background-position: 50% 50%;
+  }
+  75% {
+    transform: perspective(500px) rotateX(-5deg) rotateY(5deg) scale(0.98);
+    filter: brightness(1.2) blur(2px);
+    background-position: 75% 75%;
+  }
+  100% {
+    transform: perspective(500px) rotateX(0deg) rotateY(0deg) scale(1);
+    filter: brightness(1) blur(0px);
+    background-position: 100% 100%;
+  }
+}
+
+@keyframes singularity-pulse {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(138, 43, 226, 0.6);
+  }
+  50% {
+    text-shadow: 0 0 30px rgba(255, 255, 255, 1), 0 0 60px rgba(138, 43, 226, 0.8), 0 0 80px rgba(75, 0, 130, 0.5);
+  }
+}
+
+@keyframes holographic-echo {
+  0%, 100% {
+    transform: translateZ(0) rotateY(0deg);
+    opacity: 1;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5), 0 0 10px rgba(255, 0, 255, 0.3), 0 0 15px rgba(0, 255, 0, 0.2);
+  }
+  25% {
+    transform: translateZ(10px) rotateY(5deg);
+    opacity: 0.8;
+    text-shadow: 2px 0 5px rgba(0, 255, 255, 0.6), -2px 0 10px rgba(255, 0, 255, 0.4), 0 0 20px rgba(0, 255, 0, 0.3);
+  }
+  50% {
+    transform: translateZ(0) rotateY(0deg);
+    opacity: 0.6;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.4), 0 0 10px rgba(255, 0, 255, 0.2), 0 0 15px rgba(0, 255, 0, 0.1);
+  }
+  75% {
+    transform: translateZ(-10px) rotateY(-5deg);
+    opacity: 0.8;
+    text-shadow: -2px 0 5px rgba(0, 255, 255, 0.6), 2px 0 10px rgba(255, 0, 255, 0.4), 0 0 20px rgba(0, 255, 0, 0.3);
+  }
 }
