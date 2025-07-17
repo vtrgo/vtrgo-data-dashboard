@@ -64,7 +64,7 @@ export default function Dashboard() {
   const randomQuote = inspirationalQuotes[Math.floor(Math.random() * inspirationalQuotes.length)];
   const timeRangeLabel = describeTimeRange(timeRange.start, timeRange.stop).label;
   const [themes, setThemes] = useState<string[]>([]);
-  const [themeIndex, setThemeIndex] = useState(0);
+  const [themeIndex, setThemeIndexState] = useState(0);
   const [enableTheming, setEnableTheming] = useState(true);
   const currentTheme = enableTheming && themes.length > 0 ? themes[themeIndex] : "default";
 
@@ -86,7 +86,19 @@ export default function Dashboard() {
   useEffect(() => {
     const loaded = getAvailableThemes();
     if (loaded.length > 0) setThemes(loaded);
+
+    // Load themeIndex from localStorage
+    const storedThemeIndex = localStorage.getItem("vtr-title-theme-index");
+    if (storedThemeIndex !== null && !isNaN(Number(storedThemeIndex))) {
+      setThemeIndexState(Number(storedThemeIndex));
+    }
   }, []);
+
+  // Custom setter to persist themeIndex
+  const setThemeIndex = (idx: number) => {
+    setThemeIndexState(idx);
+    localStorage.setItem("vtr-title-theme-index", String(idx));
+  };
 
   const groupedFloats = useMemo(() => (data ? groupFloatsBySection(data.float_averages || {}) : {}), [data]);
   const groupedBooleans = useMemo(() => (data ? groupBooleansBySection(data.boolean_percentages || {}) : {}), [data]);
