@@ -14,6 +14,8 @@ import { formatKey } from "@/utils/textFormat"; // Ensure formatKey is imported 
 import { Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button"; // Import Button
 import { ConfigDrawer } from "@/components/layout/ConfigDrawer"; // Import ConfigDrawer
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import { Quote } from "@/components/layout/Quote";
 
 function formatSectionTitle(name: string) {
   return name
@@ -90,8 +92,9 @@ export default function Dashboard() {
   const groupedBooleans = useMemo(() => (data ? groupBooleansBySection(data.boolean_percentages || {}) : {}), [data]);
 
   return (
-    <div className={`theme-${currentTheme} min-h-screen bg-[url('/textures/paper-fiber.png')] bg-repeat relative`}>
-      <div className="sticky top-0 z-60 bg-white text-black border-y-4 border-gray-300 bg-[url('/textures/paper-fiber.png')] px-6 py-6 shadow-md">
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <div className={`theme-${currentTheme} min-h-screen bg-background relative`}>
+      <div className="sticky top-0 z-60 bg-background text-foreground border-b shadow px-6 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => setShowConfig(true)}>
@@ -100,11 +103,12 @@ export default function Dashboard() {
             </Button>
             <div className="text-center sm:text-left">
               <Title text={randomTitle} />
-              <div className="text-sm text-muted-foreground italic mt-1">{randomQuote}</div>
+              {/* <div className="text-sm text-muted-foreground italic mt-1">{randomQuote}</div> */}
+              <Quote text={randomQuote} className="mt-1" />
             </div>
           </div>
           <div className="flex flex-wrap gap-4 items-center text-sm">
-            <select className="bg-[url('/textures/paper-fiber.png')] border px-2 py-2 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring" onChange={(e) => setTimeRange({ start: e.target.value, stop: "now()" })} value={timeRange.start}>
+            <select className="border px-2 py-2 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring" onChange={(e) => setTimeRange({ start: e.target.value, stop: "now()" })} value={timeRange.start}>
               <option value="-1h">Last 1 hour</option>
               <option value="-3h">Last 3 hours</option>
               <option value="-6h">Last 6 hours</option>
@@ -118,7 +122,7 @@ export default function Dashboard() {
               <option value="-1mo">Last 1 month</option>
             </select>
             {data && data.float_averages && Object.keys(data.float_averages).length > 0 && (
-              <select className="bg-[url('/textures/paper-fiber.png')] border px-2 py-2 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring" onChange={(e) => setSelectedFloatField(e.target.value)} value={selectedFloatField || ''}>
+              <select className="border px-2 py-2 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring" onChange={(e) => setSelectedFloatField(e.target.value)} value={selectedFloatField || ''}>
                 <option value="" disabled>Select a float field</option>
                 {Object.keys(data.float_averages).map((fieldKey) => (
                   <option key={fieldKey} value={fieldKey}>{formatKey(fieldKey)}</option>
@@ -147,7 +151,7 @@ export default function Dashboard() {
 
       {selectedFloatField && (
         <section className="font-serif">
-          <h2 className="text-xl uppercase tracking-widest text-neutral-500 mb-4 italic">Performance Data</h2>
+          <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
           <PanelGrid>
             <FloatAreaChartPanel field={selectedFloatField} start={timeRange.start} stop={timeRange.stop} intervalMs={60000} />
           </PanelGrid>
@@ -157,7 +161,7 @@ export default function Dashboard() {
       {data && (
         <main className="p-6 space-y-10">
           <section className="font-serif">
-            <h2 className="text-xl uppercase tracking-widest text-neutral-500 mb-4 italic">System Status (% True over {timeRangeLabel})</h2>
+            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Status (% True over {timeRangeLabel})</h2>
             <PanelGrid>
               {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
                 <BooleanPanel key={key} title={title} values={values} />
@@ -166,7 +170,7 @@ export default function Dashboard() {
           </section>
 
           <section className="font-serif">
-            <h2 className="text-xl uppercase tracking-widest text-neutral-500 mb-4 italic">Float Averages</h2>
+            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Float Averages</h2>
             <PanelGrid>
               {Object.entries(groupedFloats).map(([key, { title, values }]) => (
                 <FloatPanel key={key} title={title} values={values} />
@@ -178,5 +182,6 @@ export default function Dashboard() {
         </main>
       )}
     </div>
+    </ThemeProvider>
   );
 }

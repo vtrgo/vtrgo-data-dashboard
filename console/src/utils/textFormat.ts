@@ -1,3 +1,4 @@
+// file: console/src/utils/textFormat.ts
 export function formatFaultKey(key: string): string {
   return key.replace("FaultBits.", "").replace(/_/g, " ");
 }
@@ -13,4 +14,26 @@ export function formatKey(key: string): string {
   formattedKey = formattedKey.replace(/_/g, " ");
 
   return formattedKey;
+}
+
+export function extractFieldKey(key: string): string {
+  const parts = key.split('.');
+  return parts[parts.length - 1] || key;
+}
+
+export function getFieldUnit(fieldKey: string): string {
+  if (/^Vibration[XYZ]$/.test(fieldKey)) {
+    return "mm/s²";
+  }
+
+  switch (fieldKey) {
+    case "Temperature":
+      return "°C";
+    case "Speed":
+      return "Hz";
+    case "PartsPerMinute":
+      return "PPM";
+    default:
+      return "";
+  }
 }

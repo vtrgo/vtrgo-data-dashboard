@@ -1,7 +1,7 @@
+/* file: console/src/index.css */
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "./themes.css";
-
+@import "./styles/themes.css";
 
 /* 
 ---break--- */
@@ -52,10 +52,10 @@
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(41.774% 0.20454 311.827);
+  --card-foreground: oklch(0% 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.645 0.246 16.439);
+  --primary: oklch(64.809% 0.12056 334.643);
   --primary-foreground: oklch(0.969 0.015 12.422);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -89,7 +89,7 @@
   --card-foreground: oklch(76.676% 0.17875 157.625);
   --popover: oklch(9.302% 0.0068 145.075);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.645 0.246 16.439);
+  --primary: oklch(66.972% 0.15451 340.395);
   --primary-foreground: oklch(0.969 0.015 12.422);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
