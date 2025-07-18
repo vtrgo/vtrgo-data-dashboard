@@ -398,25 +398,25 @@ func inferWindowSize(start, stop string) string {
 	case strings.HasPrefix(start, "-1h"):
 		return "1s"
 	case strings.HasPrefix(start, "-3h"):
-		return "5s"
+		return "30s"
 	case strings.HasPrefix(start, "-6h"):
 		return "10s"
 	case strings.HasPrefix(start, "-12h"):
-		return "30s"
+		return "1m"
 	case strings.HasPrefix(start, "-1d"):
 		return "1m"
 	case strings.HasPrefix(start, "-2d"):
-		return "5m"
+		return "2m"
 	case strings.HasPrefix(start, "-3d"):
-		return "5m"
+		return "3m"
 	case strings.HasPrefix(start, "-1w"):
-		return "5m"
+		return "10m"
 	case strings.HasPrefix(start, "-2w"):
-		return "5m"
+		return "10m"
 	case strings.HasPrefix(start, "-3w"):
-		return "5m"
+		return "10m"
 	case strings.HasPrefix(start, "-1mo"):
-		return "5m"
+		return "10m"
 	default:
 		return "5m" // fallback for short or malformed inputs
 	}
