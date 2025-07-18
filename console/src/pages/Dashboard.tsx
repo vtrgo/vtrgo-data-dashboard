@@ -10,7 +10,6 @@ import { getRandomTitle } from "@/utils/titles";
 import { getAvailableThemes } from "@/utils/getThemes";
 import { describeTimeRange } from "@/utils/describeTimeRange";
 import { inspirationalQuotes } from "@/utils/quotes";
-import { formatKey } from "@/utils/textFormat"; // Ensure formatKey is imported for dropdown
 import { Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button"; // Import Button
 import { ConfigDrawer } from "@/components/layout/ConfigDrawer"; // Import ConfigDrawer
@@ -57,7 +56,6 @@ function groupFloatsBySection(floats: Record<string, number>) {
 
 export default function Dashboard() {
   const [timeRange, setTimeRange] = useState({ start: "-1h", stop: "now()" });
-  const [selectedFloatField, setSelectedFloatField] = useState<string | null>(null);
   const { data, loading, error } = useStats(timeRange, 60000);
   const [showConfig, setShowConfig] = useState(false);
   const [randomTitle, setRandomTitle] = useState("");
@@ -67,17 +65,6 @@ export default function Dashboard() {
   const [themeIndex, setThemeIndexState] = useState(0);
   const [enableTheming, setEnableTheming] = useState(true);
   const currentTheme = enableTheming && themes.length > 0 ? themes[themeIndex] : "default";
-
-  useEffect(() => {
-    if (
-      data &&
-      data.float_averages &&
-      Object.keys(data.float_averages).length > 0 &&
-      selectedFloatField === null
-    ) {
-      setSelectedFloatField(Object.keys(data.float_averages)[0]);
-    }
-  }, [data, selectedFloatField]);
 
   useEffect(() => {
     setRandomTitle(getRandomTitle());
@@ -102,6 +89,9 @@ export default function Dashboard() {
 
   const groupedFloats = useMemo(() => (data ? groupFloatsBySection(data.float_averages || {}) : {}), [data]);
   const groupedBooleans = useMemo(() => (data ? groupBooleansBySection(data.boolean_percentages || {}) : {}), [data]);
+
+  // Prepare float field list for FloatAreaChartPanel
+  const floatFields = data && data.float_averages ? Object.keys(data.float_averages) : [];
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -133,14 +123,6 @@ export default function Dashboard() {
               <option value="-3w">Last 3 weeks</option>
               <option value="-1mo">Last 1 month</option>
             </select>
-            {data && data.float_averages && Object.keys(data.float_averages).length > 0 && (
-              <select className="border px-2 py-2 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring" onChange={(e) => setSelectedFloatField(e.target.value)} value={selectedFloatField || ''}>
-                <option value="" disabled>Select a float field</option>
-                {Object.keys(data.float_averages).map((fieldKey) => (
-                  <option key={fieldKey} value={fieldKey}>{formatKey(fieldKey)}</option>
-                ))}
-              </select>
-            )}
           </div>
         </div>
       </div>
@@ -161,11 +143,11 @@ export default function Dashboard() {
       {error && <div className="p-4 text-center text-red-500">Error loading dashboard data: {error.message}</div>}
       {!data && !loading && <div className="p-4 text-center text-muted-foreground">No dashboard data available.</div>}
 
-      {selectedFloatField && (
+      {floatFields.length > 0 && (
         <section className="font-serif">
           <h2 className="pl-9 pt-3 text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
           <PanelGrid>
-            <FloatAreaChartPanel field={selectedFloatField} start={timeRange.start} stop={timeRange.stop} intervalMs={60000} />
+            <FloatAreaChartPanel floatFields={floatFields} start={timeRange.start} stop={timeRange.stop} intervalMs={60000} />
             <FaultBarChartPanel faults={data.fault_counts || {}} />
           </PanelGrid>
         </section>

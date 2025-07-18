@@ -1,4 +1,8 @@
+// file: console/src/components/panels/FaultBarChartPanel.tsx
+
+import { useMemo } from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { getLabel } from '@/utils/databaseFields';
 import {
   BarChart,
   Bar,
@@ -15,37 +19,38 @@ interface FaultBarChartPanelProps {
 
 /**
  * A panel that displays fault counts in a horizontal bar chart.
- * Styling is consistent with shadcn/ui theming principles, using CSS variables.
+ * It uses the centralized databaseFields utility for formatting keys.
  */
 export function FaultBarChartPanel({ faults }: FaultBarChartPanelProps) {
   const title = 'Fault Counts';
   const cardProps = { className: 'col-span-full' };
 
-  const hasData = faults && Object.keys(faults).length > 0;
+  const chartData = useMemo(() => {
+    if (!faults || Object.keys(faults).length === 0) {
+      return [];
+    }
+    return Object.entries(faults)
+      .filter(([_, count]) => count > 0)
+      .map(([faultKey, count]) => ({
+        fault: faultKey,
+        label: getLabel(faultKey), // Use the new utility function
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [faults]);
 
-  // Map faults object to array, remove "FaultBits." prefix for display, and sort
-  const chartData = hasData
-    ? Object.entries(faults)
-        .filter(([_, count]) => count > 0)
-        .map(([fault, count]) => ({
-          fault,
-          label: fault.startsWith('FaultBits.') ? fault.slice('FaultBits.'.length) : fault,
-          count,
-        }))
-        .sort((a, b) => b.count - a.count)
-    : [];
+  const hasData = chartData.length > 0;
 
   // Dynamically calculate Y-axis width based on the longest label
-  const yAxisWidth = hasData
-    ? Math.max(
-        100, // Minimum width
-        chartData.reduce((maxWidth, item) => {
-          // Estimate text width using the new label property and add padding
-          const currentWidth = item.label.length * 8 + 40;
-          return Math.max(maxWidth, currentWidth);
-        }, 0)
-      )
-    : 100;
+  const yAxisWidth = useMemo(() => {
+    if (!hasData) return 100;
+    const longestLabel = chartData.reduce((max, item) => {
+      return item.label.length > max ? item.label.length : max;
+    }, 0);
+    // Estimate width: 8px per character plus 40px padding
+    return Math.max(120, longestLabel * 8 + 40);
+  }, [chartData, hasData]);
+
 
   if (!hasData) {
     return (
