@@ -20,55 +20,60 @@ interface FloatAreaChartPanelProps {
   intervalMs?: number | null;
 }
 
+/**
+ * A panel that displays a time-series float value as an area chart.
+ * Styling is consistent with shadcn/ui theming principles, using CSS variables.
+ */
 export function FloatAreaChartPanel({ field, start, stop, intervalMs }: FloatAreaChartPanelProps) {
   const { data, loading, error } = useFloatRange(field, { start, stop }, intervalMs);
   const title = `${formatKey(field)}`;
   const fieldKey = `${extractFieldKey(field)}`;
   const fieldUnit = getFieldUnit(fieldKey);
 
-  // Common Card props for layout
   const cardProps = { className: 'col-span-full' };
 
+  // Loading State
   if (loading) {
     return (
       <Card {...cardProps}>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-64">
+        <CardContent className="flex h-64 items-center justify-center">
           <p className="text-muted-foreground">Loading historical data...</p>
         </CardContent>
       </Card>
     );
   }
 
+  // Error State
   if (error) {
     return (
       <Card {...cardProps}>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-64 text-destructive">
+        <CardContent className="flex h-64 items-center justify-center text-destructive">
           <p>Error: {error.message}</p>
         </CardContent>
       </Card>
     );
   }
 
+  // No Data State
   if (!data || data.length === 0) {
     return (
       <Card {...cardProps}>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-64">
+        <CardContent className="flex h-64 items-center justify-center">
           <p className="text-muted-foreground">No data available for this range.</p>
         </CardContent>
       </Card>
     );
   }
 
-  // Format data for Recharts
   const chartData = data.map((d) => ({ time: new Date(d.time), value: d.value }));
 
   return (
@@ -78,22 +83,56 @@ export function FloatAreaChartPanel({ field, start, stop, intervalMs }: FloatAre
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-neutral-200" />
+          <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+            <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+
             <XAxis
               dataKey="time"
               tickFormatter={(tick) => formatDateTime(tick, 'HH:mm')}
+              tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+              axisLine={{ stroke: 'var(--border)' }}
+              tickLine={{ stroke: 'var(--border)' }}
               minTickGap={30}
               angle={-45}
               textAnchor="end"
               height={70}
             />
-            <YAxis />
-            <Tooltip
-              labelFormatter={(label) => formatDateTime(label, 'MMM dd, HH:mm:ss')}
-              formatter={(value: number) => [`${value.toFixed(2)}  (${fieldUnit})`, `${fieldKey}`]}
+
+            <YAxis
+              tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+              axisLine={{ stroke: 'var(--border)' }}
+              tickLine={{ stroke: 'var(--border)' }}
             />
-            <Area type="monotone" dataKey="value" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.3} />
+
+            <Tooltip
+              cursor={{ fill: 'var(--muted)' }}
+              labelFormatter={(label) => formatDateTime(label, 'MMM dd, HH:mm:ss')}
+              formatter={(value: number) => [`${value.toFixed(2)} (${fieldUnit})`, `${fieldKey}`]}
+              contentStyle={{
+                background: 'var(--popover)',
+                borderColor: 'var(--border)',
+                borderRadius: 'var(--radius)',
+                color: 'var(--popover-foreground)',
+              }}
+              labelStyle={{
+                color: 'var(--popover-foreground)',
+                fontWeight: 500,
+              }}
+            />
+
+            <defs>
+              <linearGradient id="colorPrimary" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.1} />
+              </linearGradient>
+            </defs>
+
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="var(--primary)"
+              fill="url(#colorPrimary)"
+            />
           </AreaChart>
         </ResponsiveContainer>
       </CardContent>

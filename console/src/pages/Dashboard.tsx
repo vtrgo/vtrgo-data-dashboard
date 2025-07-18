@@ -3,9 +3,9 @@ import { useStats } from "@/hooks/useStats";
 import { PanelGrid } from "@/components/layout/PanelGrid";
 import { Title } from "@/components/layout/Title";
 import { BooleanPanel } from "@/components/panels/BooleanPanel";
-import { FaultPanel } from "@/components/panels/FaultPanel";
 import { FloatPanel } from "@/components/panels/FloatPanel";
 import { FloatAreaChartPanel } from "@/components/panels/FloatAreaChartPanel";
+import { FaultBarChartPanel } from "@/components/panels/FaultBarChartPanel";
 import { getRandomTitle } from "@/utils/titles";
 import { getAvailableThemes } from "@/utils/getThemes";
 import { describeTimeRange } from "@/utils/describeTimeRange";
@@ -163,9 +163,10 @@ export default function Dashboard() {
 
       {selectedFloatField && (
         <section className="font-serif">
-          <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
+          <h2 className="pl-9 pt-3 text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
           <PanelGrid>
             <FloatAreaChartPanel field={selectedFloatField} start={timeRange.start} stop={timeRange.stop} intervalMs={60000} />
+            <FaultBarChartPanel faults={data.fault_counts || {}} />
           </PanelGrid>
         </section>
       )}
@@ -189,8 +190,6 @@ export default function Dashboard() {
               ))}
             </PanelGrid>
           </section>
-
-          <FaultPanel faults={data.fault_counts || {}} start={timeRange.start} stop={timeRange.stop} />
         </main>
       )}
     </div>
