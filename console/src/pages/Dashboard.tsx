@@ -6,6 +6,7 @@ import { Title } from "@/components/layout/Title";
 import { BooleanPanel } from "@/components/panels/BooleanPanel";
 import { FloatPanel } from "@/components/panels/FloatPanel";
 import { FloatAreaChartPanel } from "@/components/panels/FloatAreaChartPanel";
+import { HealthSummaryPanel } from "@/components/panels/HealthSummaryPanel";
 import { FaultBarChartPanel } from "@/components/panels/FaultBarChartPanel";
 import { getRandomTitle } from "@/utils/titles";
 import { getAvailableThemes } from "@/utils/getThemes";
@@ -96,6 +97,14 @@ export default function Dashboard() {
   // Prepare float field list for FloatAreaChartPanel
   const floatFields = data && data.float_averages ? Object.keys(data.float_averages) : [];
 
+  const partsPerMinute = data?.float_averages?.['Floats.Performance.PartsPerMinute'] ?? 0;
+  const autoModePercentage = data?.boolean_percentages?.['SystemStatusBits.AutoMode'] ?? 0;
+  const totalFaults = useMemo(() => {
+    if (!data?.fault_counts) return 0;
+    // We cast the values to `number[]` because TypeScript infers them as `unknown[]` from the generic `useStats` hook.
+    return (Object.values(data.fault_counts) as number[]).reduce((sum, count) => sum + count, 0);
+  }, [data?.fault_counts]);
+
   const renderContent = () => {
     // Show skeleton only on the initial load when there's no data yet.
     // On subsequent polls, `loading` will be true but we can show the stale data.
@@ -112,10 +121,21 @@ export default function Dashboard() {
     }
 
     return (
-      <>
+      <main className="p-6 space-y-10">
+        <section className="font-serif">
+          <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Health</h2>
+          <HealthSummaryPanel
+            partsPerMinute={partsPerMinute}
+            autoModePercentage={autoModePercentage}
+            totalFaults={totalFaults}
+            timeRangeLabel={timeRangeLabel}
+            className="max-w-2xl mx-auto"
+          />
+        </section>
+
         {floatFields.length > 0 && (
           <section className="font-serif">
-            <h2 className="pl-9 pt-3 text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
+            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
             <PanelGrid>
               <FloatAreaChartPanel
                 floatFields={floatFields}
@@ -129,26 +149,24 @@ export default function Dashboard() {
           </section>
         )}
 
-        <main className="p-6 space-y-10">
-          <section className="font-serif">
-            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Status (% True over {timeRangeLabel})</h2>
-            <PanelGrid>
-              {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
-                <BooleanPanel key={key} title={title} values={values} />
-              ))}
-            </PanelGrid>
-          </section>
+        <section className="font-serif">
+          <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Status (% True over {timeRangeLabel})</h2>
+          <PanelGrid>
+            {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
+              <BooleanPanel key={key} title={title} values={values} />
+            ))}
+          </PanelGrid>
+        </section>
 
-          <section className="font-serif">
-            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Float Averages</h2>
-            <PanelGrid>
-              {Object.entries(groupedFloats).map(([key, { title, values }]) => (
-                <FloatPanel key={key} title={title} values={values} />
-              ))}
-            </PanelGrid>
-          </section>
-        </main>
-      </>
+        <section className="font-serif">
+          <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Float Averages</h2>
+          <PanelGrid>
+            {Object.entries(groupedFloats).map(([key, { title, values }]) => (
+              <FloatPanel key={key} title={title} values={values} />
+            ))}
+          </PanelGrid>
+        </section>
+      </main>
     );
   };
 
