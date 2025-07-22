@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress";
 import { ShieldCheck, Cpu, AlertTriangle, PlayCircle } from "lucide-react";
 
@@ -23,6 +24,15 @@ export function HealthSummaryPanel({
 }: HealthSummaryPanelProps) {
   const title = `System Health Summary`;
 
+  const autoModeVariant = useMemo((): "success" | "warning" => {
+    if (autoModePercentage >= 90) {
+      return "success";
+    }
+    return "warning";
+  }, [autoModePercentage]);
+
+  const faultColorClass = totalFaults > 0 ? "text-warning" : "text-success";
+
   return (
     <Card className={className}>
       <CardHeader>
@@ -44,11 +54,14 @@ export function HealthSummaryPanel({
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><PlayCircle className="h-4 w-4" />Automatic Mode</span>
             <span className="text-lg font-bold">{autoModePercentage.toFixed(1)}%</span>
           </div>
-          <Progress value={autoModePercentage} />
+          <Progress value={autoModePercentage} variant={autoModeVariant} />
         </div>
         <div>
-          <div className="flex justify-between items-center"><span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><AlertTriangle className="h-4 w-4" />Total Faults</span>
-            <span className={`text-lg font-bold ${totalFaults > 0 ? 'text-destructive' : 'text-green-500'}`}>{totalFaults}</span>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className={`h-4 w-4 ${faultColorClass}`} />Total Faults
+            </span>
+            <span className={`text-lg font-bold ${faultColorClass}`}>{totalFaults}</span>
           </div>
         </div>
       </CardContent>

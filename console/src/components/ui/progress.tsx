@@ -1,22 +1,51 @@
 "use client"
 
 import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 
 import { cn } from "@/lib/utils"
 
-const Progress = React.forwardRef<
-  React.ComponentRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
->(({ className, value, ...props }, ref) => (
+const progressRootVariants = cva("relative h-4 w-full overflow-hidden rounded-full", {
+  variants: {
+    variant: {
+      default: "bg-secondary",
+      success: "bg-success/20",
+      warning: "bg-warning/20",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+})
+
+const progressIndicatorVariants = cva("h-full flex-1 transition-all bg-gradient-to-r", {
+  variants: {
+    variant: {
+      default: "bg-primary",
+      success: "from-success/20 to-success",
+      warning: "from-warning/20 to-warning",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+})
+
+export interface ProgressProps
+  extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>,
+    VariantProps<typeof progressIndicatorVariants> {}
+
+const Progress = React.forwardRef<React.ComponentRef<typeof ProgressPrimitive.Root>, ProgressProps>(
+  ({ className, value, variant, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
-    className={cn("relative h-4 w-full overflow-hidden rounded-full bg-secondary", className)}
+    className={cn(progressRootVariants({ variant, className }))}
     value={value}
     {...props}
   >
     <ProgressPrimitive.Indicator
-      className={cn("h-full w-full flex-1 bg-primary transition-all")}
+      className={cn(progressIndicatorVariants({ variant }))}
       style={{ width: `${value || 0}%` }}
     />
   </ProgressPrimitive.Root>
