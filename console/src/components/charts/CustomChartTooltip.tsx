@@ -1,10 +1,17 @@
+import { formatDateTime } from '@/utils/timeFormat';
+
 /**
- * Defines the shape of the data item passed in the payload array.
+ * Defines the shape of the data item passed in the payload array by Recharts.
  */
 interface PayloadItem {
   name: string;
   value: number;
+  unit?: string;
+  stroke?: string;
   color?: string;
+  payload?: {
+    label?: string;
+  };
 }
 
 /**
@@ -13,7 +20,7 @@ interface PayloadItem {
 interface CustomTooltipProps {
   active?: boolean;
   payload?: PayloadItem[];
-  label?: string | number | Date; // Label can be various types
+  label?: string | number;
 }
 
 /**
@@ -21,27 +28,29 @@ interface CustomTooltipProps {
  * It uses shadcn/ui CSS variables for theming.
  */
 export const CustomChartTooltip = ({ active, payload, label }: CustomTooltipProps) => {
-  if (active && payload && payload.length) {
-    // Format the label appropriately before rendering
-    const formattedLabel =
-      label instanceof Date
-        ? label.toLocaleString([], {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : label;
+  // The `label` can be undefined if the tooltip is not active over a data point.
+  if (active && payload && payload.length && typeof label !== 'undefined') {
+    // The 'label' from recharts can be a timestamp (number) or a string.
+    // We convert it to a Date object to format it reliably.
+    const date = new Date(label);
+    const formattedLabel = !isNaN(date.getTime()) // Check if the date is valid before formatting
+      ? formatDateTime(date, 'MMM dd, HH:mm:ss')
+      : String(label);
 
     return (
-      <div className="rounded-lg border bg-popover p-2 text-sm shadow-sm">
+      <div className="rounded-lg border bg-popover p-2 text-sm shadow-sm animate-in fade-in-0 zoom-in-95">
         <div className="font-medium text-popover-foreground">{formattedLabel}</div>
-        {payload.map((p: PayloadItem, i: number) => (
+        {payload.map((p, i) => (
           <div key={i} className="text-muted-foreground">
+            {/* Use p.name for the series label, which is set on the <Bar /> or <Area /> component. */}
             {p.name}:{' '}
-            <span className="font-bold" style={{ color: p.color || 'var(--primary)' }}>
-              {p.value}
+            <span
+              className="font-bold"
+              // Prioritize `stroke` for color, as `color` can be a gradient URL for bars.
+              style={{ color: p.stroke || p.color || 'hsl(var(--primary))' }}
+            >
+              {p.value?.toLocaleString()}
+              {p.unit ? ` ${p.unit}` : ''}
             </span>
           </div>
         ))}

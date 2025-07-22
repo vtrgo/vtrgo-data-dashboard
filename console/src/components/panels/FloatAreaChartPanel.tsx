@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useFloatRange } from '@/hooks/useFloatRange';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { ChartPanel } from '@/components/panels/ChartPanel';
 import {
   getUnit,
   getGroupLabel,
@@ -19,7 +19,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { formatDateTime } from '@/utils/timeFormat';
+import { CustomChartTooltip } from '@/components/charts/CustomChartTooltip';
 
 interface FloatAreaChartPanelProps {
   floatFields: string[];
@@ -68,56 +68,45 @@ export function FloatAreaChartPanel({
     // A simple way to check if the range is more than a day.
     // A more robust solution might parse the start string more carefully.
     const isMultiDay = start.includes('d') || start.includes('w') || start.includes('mo');
-    return (tick: Date) => {
-      return formatDateTime(tick, isMultiDay ? 'MMM dd' : 'HH:mm');
+    return (tickValue: string | number | Date) => {
+      // Recharts can pass a timestamp (number) or a date string for the ticks,
+      // so we ensure it's always a Date object before formatting.
+      const date = new Date(tickValue);
+      if (isNaN(date.getTime())) {
+        // If the date is invalid, return an empty string to avoid display errors.
+        return '';
+      }
+      return isMultiDay ? `${date.getMonth() + 1}/${date.getDate()}` : `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
     };
   }, [start]);
 
-  return (
-    <Card className={className}>
-      <CardHeader>
-        <div className="flex justify-between items-start gap-4">
-          {/* Title on the left */}
-          <CardTitle className="text-lg font-medium tracking-tight">
-            {groupLabel} Data
-          </CardTitle>
+  const headerContent = (
+    <select
+      className="border px-2 py-1 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring w-fit"
+      onChange={(e) => setSelectedField(e.target.value)}
+      value={selectedField}
+      disabled={floatFields.length <= 1}
+      aria-label="Select a data field to display"
+    >
+      {floatFields.length === 0 && <option>No fields available</option>}
+      {floatFields.map((fieldKey) => (
+        <option key={fieldKey} value={fieldKey}>
+          {getFieldLabel(fieldKey)}
+        </option>
+      ))}
+    </select>
+  );
 
-          {/* Selector on the right */}
-          <select
-            className="border px-2 py-1 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring w-fit"
-            onChange={(e) => setSelectedField(e.target.value)}
-            value={selectedField}
-            disabled={floatFields.length <= 1}
-            aria-label="Select a data field to display"
-          >
-            {floatFields.length === 0 && <option>No fields available</option>}
-            {floatFields.map((fieldKey) => (
-              <option key={fieldKey} value={fieldKey}>
-                {getFieldLabel(fieldKey)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[300px] w-full">
-          {loading && (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-muted-foreground">Loading historical data...</p>
-            </div>
-          )}
-          {error && (
-            <div className="flex h-full items-center justify-center text-destructive">
-              <p>Error: {error.message}</p>
-            </div>
-          )}
-          {!loading && !error && chartData.length === 0 && (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-muted-foreground">No data available for this range.</p>
-            </div>
-          )}
-          {!loading && !error && chartData.length > 0 && (
-            <ResponsiveContainer width="100%" height="100%">
+  return (
+    <ChartPanel
+      title={`${groupLabel} Data`}
+      headerContent={headerContent}
+      isLoading={loading}
+      error={error}
+      hasData={chartData.length > 0}
+      className={className}
+    >
+      <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis
@@ -136,24 +125,7 @@ export function FloatAreaChartPanel({
                   axisLine={{ stroke: 'var(--border)' }}
                   tickLine={{ stroke: 'var(--border)' }}
                 />
-                <Tooltip
-                  cursor={{ fill: 'var(--muted)' }}
-                  labelFormatter={(label) => formatDateTime(label, 'MMM dd, HH:mm:ss')}
-                  formatter={(value: number) => [
-                    `${value.toFixed(2)} ${fieldUnit ? `(${fieldUnit})` : ''}`,
-                    formatSegment(leafKey),
-                  ]}
-                  contentStyle={{
-                    background: 'var(--popover)',
-                    borderColor: 'var(--border)',
-                    borderRadius: 'var(--radius)',
-                    color: 'var(--popover-foreground)',
-                  }}
-                  labelStyle={{
-                    color: 'var(--popover-foreground)',
-                    fontWeight: 500,
-                  }}
-                />
+                <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<CustomChartTooltip />} />
                 <defs>
                   <linearGradient id="colorPrimary" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
@@ -163,15 +135,14 @@ export function FloatAreaChartPanel({
                 <Area
                   type="monotone"
                   dataKey="value"
+                  unit={fieldUnit}
+                  name={formatSegment(leafKey)}
                   stroke="var(--primary)"
                   fill="url(#colorPrimary)"
                   dot={false}
                 />
               </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      </ResponsiveContainer>
+    </ChartPanel>
   );
 }

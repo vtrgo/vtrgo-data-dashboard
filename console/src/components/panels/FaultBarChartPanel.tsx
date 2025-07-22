@@ -1,7 +1,7 @@
 // file: console/src/components/panels/FaultBarChartPanel.tsx
 
 import { useMemo } from 'react';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { ChartPanel } from '@/components/panels/ChartPanel';
 import { getLabel } from '@/utils/databaseFields';
 import {
   BarChart,
@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   LabelList,
 } from 'recharts';
+import { CustomChartTooltip } from '@/components/charts/CustomChartTooltip';
 
 interface FaultBarChartPanelProps {
   faults: Record<string, number>;
@@ -52,35 +53,19 @@ export function FaultBarChartPanel({
   const isTruncated = totalFaults > maxItems;
 
   // Dynamically calculate Y-axis width based on the longest label
-  const yAxisWidth = useMemo(() => {
-    if (!hasData) return 100;
-    const longestLabel = chartData.reduce((max, item) => {
-      return item.label.length > max ? item.label.length : max;
-    }, 0);
-    // Estimate width: ~7px per char + 40px padding. Cap at 300px to prevent layout breakage.
-    return Math.min(300, Math.max(120, longestLabel * 7 + 40));
-  }, [chartData, hasData]);
-
-
-  if (!hasData) {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex h-64 items-center justify-center">
-          <p className="text-muted-foreground">No fault data available for this range.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const yAxisWidth = useMemo(
+    () => {
+      if (!hasData) return 100;
+      const longestLabel = chartData.reduce((max, item) => (item.label.length > max ? item.label.length : max), 0);
+      // Estimate width: ~7px per char + 40px padding. Cap at 300px to prevent layout breakage.
+      return Math.min(300, Math.max(120, longestLabel * 7 + 40));
+    },
+    [chartData, hasData]
+  );
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="text-lg font-medium tracking-tight">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col">
+    <ChartPanel title={title} isLoading={false} hasData={hasData} className={className} contentHeight={chartData.length * 40 + 60}>
+      <div className="flex flex-col h-full">
         <ResponsiveContainer width="100%" height={chartData.length * 40 + 30}>
           <BarChart
             data={chartData}
@@ -110,18 +95,8 @@ export function FaultBarChartPanel({
             />
 
             <Tooltip
-              cursor={{ fill: 'var(--muted)' }}
-              formatter={(value: number) => [value, 'Count']}
-              contentStyle={{
-                background: 'var(--popover)',
-                borderColor: 'var(--border)',
-                borderRadius: 'var(--radius)',
-                color: 'var(--popover-foreground)',
-              }}
-              labelStyle={{
-                color: 'var(--popover-foreground)',
-                fontWeight: 500,
-              }}
+              cursor={{ fill: 'hsl(var(--muted))' }}
+              content={<CustomChartTooltip />}
             />
 
             <defs>
@@ -134,6 +109,7 @@ export function FaultBarChartPanel({
             <Bar
               dataKey="count"
               fill="url(#barFillGradient)"
+              name="Count"
               stroke="var(--primary)"
               radius={[0, 4, 4, 0]}
             >
@@ -151,7 +127,7 @@ export function FaultBarChartPanel({
             Showing top {maxItems} of {totalFaults} faults.
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </ChartPanel>
   );
 }
