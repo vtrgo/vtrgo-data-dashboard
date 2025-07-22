@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useStats } from "@/hooks/useStats";
 import { PanelGrid } from "@/components/layout/PanelGrid";
+import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton";
 import { Title } from "@/components/layout/Title";
 import { BooleanPanel } from "@/components/panels/BooleanPanel";
 import { FloatPanel } from "@/components/panels/FloatPanel";
@@ -15,6 +16,8 @@ import { Button } from "@/components/ui/button"; // Import Button
 import { ConfigDrawer } from "@/components/layout/ConfigDrawer"; // Import ConfigDrawer
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Quote } from "@/components/layout/Quote";
+
+const POLLING_INTERVAL_MS = 60000;
 
 function formatSectionTitle(name: string) {
   return name
@@ -56,7 +59,7 @@ function groupFloatsBySection(floats: Record<string, number>) {
 
 export default function Dashboard() {
   const [timeRange, setTimeRange] = useState({ start: "-1h", stop: "now()" });
-  const { data, loading, error } = useStats(timeRange, 60000);
+  const { data, loading, error } = useStats(timeRange, POLLING_INTERVAL_MS);
   const [showConfig, setShowConfig] = useState(false);
   const [randomTitle, setRandomTitle] = useState("");
   const randomQuote = inspirationalQuotes[Math.floor(Math.random() * inspirationalQuotes.length)];
@@ -92,6 +95,62 @@ export default function Dashboard() {
 
   // Prepare float field list for FloatAreaChartPanel
   const floatFields = data && data.float_averages ? Object.keys(data.float_averages) : [];
+
+  const renderContent = () => {
+    // Show skeleton only on the initial load when there's no data yet.
+    // On subsequent polls, `loading` will be true but we can show the stale data.
+    if (loading && !data) {
+      return <DashboardSkeleton />;
+    }
+
+    if (error) {
+      return <div className="p-4 text-center text-red-500">Error loading dashboard data: {error.message}</div>;
+    }
+
+    if (!data) {
+      return <div className="p-4 text-center text-muted-foreground">No dashboard data available.</div>;
+    }
+
+    return (
+      <>
+        {floatFields.length > 0 && (
+          <section className="font-serif">
+            <h2 className="pl-9 pt-3 text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
+            <PanelGrid>
+              <FloatAreaChartPanel
+                floatFields={floatFields}
+                start={timeRange.start}
+                stop={timeRange.stop}
+                intervalMs={POLLING_INTERVAL_MS}
+                className="col-span-1 md:col-span-2"
+              />
+              <FaultBarChartPanel faults={data.fault_counts || {}} className="col-span-1" />
+            </PanelGrid>
+          </section>
+        )}
+
+        <main className="p-6 space-y-10">
+          <section className="font-serif">
+            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Status (% True over {timeRangeLabel})</h2>
+            <PanelGrid>
+              {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
+                <BooleanPanel key={key} title={title} values={values} />
+              ))}
+            </PanelGrid>
+          </section>
+
+          <section className="font-serif">
+            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Float Averages</h2>
+            <PanelGrid>
+              {Object.entries(groupedFloats).map(([key, { title, values }]) => (
+                <FloatPanel key={key} title={title} values={values} />
+              ))}
+            </PanelGrid>
+          </section>
+        </main>
+      </>
+    );
+  };
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -139,41 +198,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {loading && <div className="p-4 text-center text-muted-foreground">Loading dashboard data...</div>}
-      {error && <div className="p-4 text-center text-red-500">Error loading dashboard data: {error.message}</div>}
-      {!data && !loading && <div className="p-4 text-center text-muted-foreground">No dashboard data available.</div>}
-
-      {floatFields.length > 0 && (
-        <section className="font-serif">
-          <h2 className="pl-9 pt-3 text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
-          <PanelGrid>
-            <FloatAreaChartPanel floatFields={floatFields} start={timeRange.start} stop={timeRange.stop} intervalMs={60000} />
-            <FaultBarChartPanel faults={data.fault_counts || {}} />
-          </PanelGrid>
-        </section>
-      )}
-
-      {data && (
-        <main className="p-6 space-y-10">
-          <section className="font-serif">
-            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Status (% True over {timeRangeLabel})</h2>
-            <PanelGrid>
-              {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
-                <BooleanPanel key={key} title={title} values={values} />
-              ))}
-            </PanelGrid>
-          </section>
-
-          <section className="font-serif">
-            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Float Averages</h2>
-            <PanelGrid>
-              {Object.entries(groupedFloats).map(([key, { title, values }]) => (
-                <FloatPanel key={key} title={title} values={values} />
-              ))}
-            </PanelGrid>
-          </section>
-        </main>
-      )}
+      {renderContent()}
     </div>
     </ThemeProvider>
   );

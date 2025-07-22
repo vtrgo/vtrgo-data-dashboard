@@ -15,17 +15,23 @@ import {
 
 interface FaultBarChartPanelProps {
   faults: Record<string, number>;
+  /** The maximum number of faults to display in the chart. Defaults to 15. */
+  maxItems?: number;
+  className?: string;
 }
 
 /**
  * A panel that displays fault counts in a horizontal bar chart.
- * It uses the centralized databaseFields utility for formatting keys.
+ * It uses the centralized `getLabel` utility for formatting keys.
  */
-export function FaultBarChartPanel({ faults }: FaultBarChartPanelProps) {
+export function FaultBarChartPanel({
+  faults,
+  maxItems = 15,
+  className,
+}: FaultBarChartPanelProps) {
   const title = 'Fault Counts';
-  const cardProps = { className: 'col-span-full' };
 
-  const chartData = useMemo(() => {
+  const allFaults = useMemo(() => {
     if (!faults || Object.keys(faults).length === 0) {
       return [];
     }
@@ -33,13 +39,17 @@ export function FaultBarChartPanel({ faults }: FaultBarChartPanelProps) {
       .filter(([_, count]) => count > 0)
       .map(([faultKey, count]) => ({
         fault: faultKey,
-        label: getLabel(faultKey), // Use the new utility function
+        label: getLabel(faultKey),
         count,
       }))
       .sort((a, b) => b.count - a.count);
   }, [faults]);
 
+  const chartData = useMemo(() => allFaults.slice(0, maxItems), [allFaults, maxItems]);
+
   const hasData = chartData.length > 0;
+  const totalFaults = allFaults.length;
+  const isTruncated = totalFaults > maxItems;
 
   // Dynamically calculate Y-axis width based on the longest label
   const yAxisWidth = useMemo(() => {
@@ -47,14 +57,14 @@ export function FaultBarChartPanel({ faults }: FaultBarChartPanelProps) {
     const longestLabel = chartData.reduce((max, item) => {
       return item.label.length > max ? item.label.length : max;
     }, 0);
-    // Estimate width: 8px per character plus 40px padding
-    return Math.max(120, longestLabel * 8 + 40);
+    // Estimate width: ~7px per char + 40px padding. Cap at 300px to prevent layout breakage.
+    return Math.min(300, Math.max(120, longestLabel * 7 + 40));
   }, [chartData, hasData]);
 
 
   if (!hasData) {
     return (
-      <Card {...cardProps}>
+      <Card className={className}>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
         </CardHeader>
@@ -66,11 +76,11 @@ export function FaultBarChartPanel({ faults }: FaultBarChartPanelProps) {
   }
 
   return (
-    <Card {...cardProps}>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="text-lg font-medium tracking-tight">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col">
         <ResponsiveContainer width="100%" height={chartData.length * 40 + 30}>
           <BarChart
             data={chartData}
@@ -131,15 +141,16 @@ export function FaultBarChartPanel({ faults }: FaultBarChartPanelProps) {
                 dataKey="count"
                 position="right"
                 offset={8}
-                style={{
-                  fill: 'var(--primary-foreground)',
-                  fontSize: 14,
-                  fontWeight: 500,
-                }}
+                className="fill-foreground text-sm font-medium"
               />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+        {isTruncated && (
+          <p className="text-center text-xs text-muted-foreground mt-2">
+            Showing top {maxItems} of {totalFaults} faults.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

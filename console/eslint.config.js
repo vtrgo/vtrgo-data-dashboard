@@ -5,23 +5,44 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  // Global ignores. The trailing slash ensures it's treated as a directory.
+  { ignores: ['dist/'] },
+
+  // Apply base recommended rules to all files.
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+
+  // Configuration specific to React files.
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+      },
     },
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // Use the modern recommended rules for React Hooks.
+      ...reactHooks.configs['recommended-latest'].rules,
+
+      // Rule for React Refresh.
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
+      ],
+
+      // Override the default 'no-unused-vars' to allow underscore-prefixed variables.
+      // This is a common convention for intentionally unused function arguments.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
     },
   },

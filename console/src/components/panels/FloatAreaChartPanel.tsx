@@ -26,13 +26,20 @@ interface FloatAreaChartPanelProps {
   start: string;
   stop: string;
   intervalMs?: number | null;
+  className?: string;
 }
 
 /**
  * A panel that displays a time-series float value as an area chart, with field selection.
  * It uses the centralized databaseFields utility for parsing and formatting keys.
  */
-export function FloatAreaChartPanel({ floatFields, start, stop, intervalMs }: FloatAreaChartPanelProps) {
+export function FloatAreaChartPanel({
+  floatFields,
+  start,
+  stop,
+  intervalMs,
+  className,
+}: FloatAreaChartPanelProps) {
   const [selectedField, setSelectedField] = useState<string>(floatFields[0] || '');
 
   useEffect(() => {
@@ -52,8 +59,22 @@ export function FloatAreaChartPanel({ floatFields, start, stop, intervalMs }: Fl
   const fieldUnit = useMemo(() => (parsedKey ? getUnit(parsedKey) : ''), [parsedKey]);
   const leafKey = useMemo(() => (parsedKey ? parsedKey.subgroup || parsedKey.field : ''), [parsedKey]);
 
+  const chartData = useMemo(() => {
+    if (!data) return [];
+    return data.map((d) => ({ time: new Date(d.time), value: d.value }));
+  }, [data]);
+
+  const tickFormatter = useMemo(() => {
+    // A simple way to check if the range is more than a day.
+    // A more robust solution might parse the start string more carefully.
+    const isMultiDay = start.includes('d') || start.includes('w') || start.includes('mo');
+    return (tick: Date) => {
+      return formatDateTime(tick, isMultiDay ? 'MMM dd' : 'HH:mm');
+    };
+  }, [start]);
+
   return (
-    <Card className="col-span-full">
+    <Card className={className}>
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
           {/* Title on the left */}
@@ -79,75 +100,77 @@ export function FloatAreaChartPanel({ floatFields, start, stop, intervalMs }: Fl
         </div>
       </CardHeader>
       <CardContent>
-        {loading && (
-          <div className="flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">Loading historical data...</p>
-          </div>
-        )}
-        {error && (
-          <div className="flex h-64 items-center justify-center text-destructive">
-            <p>Error: {error.message}</p>
-          </div>
-        )}
-        {!loading && !error && (!data || data.length === 0) && (
-          <div className="flex h-64 items-center justify-center">
-            <p className="text-muted-foreground">No data available for this range.</p>
-          </div>
-        )}
-        {!loading && !error && data && data.length > 0 && (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data.map((d) => ({ time: new Date(d.time), value: d.value }))} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis
-                dataKey="time"
-                tickFormatter={(tick) => formatDateTime(tick, 'HH:mm')}
-                tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
-                axisLine={{ stroke: 'var(--border)' }}
-                tickLine={{ stroke: 'var(--border)' }}
-                minTickGap={30}
-                angle={-45}
-                textAnchor="end"
-                height={70}
-              />
-              <YAxis
-                tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
-                axisLine={{ stroke: 'var(--border)' }}
-                tickLine={{ stroke: 'var(--border)' }}
-              />
-              <Tooltip
-                cursor={{ fill: 'var(--muted)' }}
-                labelFormatter={(label) => formatDateTime(label, 'MMM dd, HH:mm:ss')}
-                formatter={(value: number) => [
-                  `${value.toFixed(2)} ${fieldUnit ? `(${fieldUnit})` : ''}`,
-                  formatSegment(leafKey),
-                ]}
-                contentStyle={{
-                  background: 'var(--popover)',
-                  borderColor: 'var(--border)',
-                  borderRadius: 'var(--radius)',
-                  color: 'var(--popover-foreground)',
-                }}
-                labelStyle={{
-                  color: 'var(--popover-foreground)',
-                  fontWeight: 500,
-                }}
-              />
-              <defs>
-                <linearGradient id="colorPrimary" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="var(--primary)"
-                fill="url(#colorPrimary)"
-                dot={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
+        <div className="h-[300px] w-full">
+          {loading && (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-muted-foreground">Loading historical data...</p>
+            </div>
+          )}
+          {error && (
+            <div className="flex h-full items-center justify-center text-destructive">
+              <p>Error: {error.message}</p>
+            </div>
+          )}
+          {!loading && !error && chartData.length === 0 && (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-muted-foreground">No data available for this range.</p>
+            </div>
+          )}
+          {!loading && !error && chartData.length > 0 && (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+                <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="time"
+                  tickFormatter={tickFormatter}
+                  tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                  axisLine={{ stroke: 'var(--border)' }}
+                  tickLine={{ stroke: 'var(--border)' }}
+                  minTickGap={40}
+                  angle={-45}
+                  textAnchor="end"
+                  height={70}
+                />
+                <YAxis
+                  tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                  axisLine={{ stroke: 'var(--border)' }}
+                  tickLine={{ stroke: 'var(--border)' }}
+                />
+                <Tooltip
+                  cursor={{ fill: 'var(--muted)' }}
+                  labelFormatter={(label) => formatDateTime(label, 'MMM dd, HH:mm:ss')}
+                  formatter={(value: number) => [
+                    `${value.toFixed(2)} ${fieldUnit ? `(${fieldUnit})` : ''}`,
+                    formatSegment(leafKey),
+                  ]}
+                  contentStyle={{
+                    background: 'var(--popover)',
+                    borderColor: 'var(--border)',
+                    borderRadius: 'var(--radius)',
+                    color: 'var(--popover-foreground)',
+                  }}
+                  labelStyle={{
+                    color: 'var(--popover-foreground)',
+                    fontWeight: 500,
+                  }}
+                />
+                <defs>
+                  <linearGradient id="colorPrimary" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="var(--primary)"
+                  fill="url(#colorPrimary)"
+                  dot={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
