@@ -139,7 +139,7 @@ func (plc *PLC) WriteTag(tagName string, tagType string, tagValue interface{}) (
 }
 
 func LoadFromEthernetIPYAML(cfg *config.Config, plc *PLC, yamlPath string) (map[string]interface{}, error) {
-	tag := "EthernetDataWrite"
+	tag := cfg.Values["PLC_TAG"]
 	length := 100 // default fallback
 	if lstr, ok := cfg.Values["ETHERNET_IP_LENGTH"]; ok {
 		if l, err := strconv.Atoi(lstr); err == nil && l > 0 {
