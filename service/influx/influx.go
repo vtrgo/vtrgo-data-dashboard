@@ -126,9 +126,11 @@ from(bucket: "%s")
 
 	percentages := make(map[string]float64)
 	for res.Next() {
-		field := res.Record().Field()
-		if val, ok := res.Record().Value().(float64); ok {
-			percentages[field] = val
+		record := res.Record()
+		if field, ok := record.ValueByKey("_field").(string); ok {
+			if val, ok := record.Value().(float64); ok {
+				percentages[field] = val
+			}
 		}
 	}
 	return percentages, res.Err()
@@ -293,7 +295,9 @@ type StatsResult struct {
 	Vibration   interface{} `json:"vibration"`
 }
 
-// AggregateFaultCounts sums the number of true values for each fault field in the given time range.
+// AggregateFaultCounts counts the number of false-to-true transitions for each fault field.
+// This accurately reflects the number of times a fault occurred, rather than how many
+// polling cycles it was active for.
 func (c *Client) AggregateFaultCounts(measurement, bucket string, fields []string, start, stop string) (map[string]float64, error) {
 	if len(fields) == 0 {
 		return map[string]float64{}, nil
@@ -302,14 +306,38 @@ func (c *Client) AggregateFaultCounts(measurement, bucket string, fields []strin
 	for _, f := range fields {
 		filters = append(filters, fmt.Sprintf(`r["_field"] == "%s"`, f))
 	}
+	// This query correctly counts fault occurrences, including faults that are
+	// persistently true throughout the time range. It works by combining two sets of data:
+	// 1. `transitions`: Counts the number of times a fault changes from `false` to `true`.
+	// 2. `initial_trues`: Identifies faults that were already in a `true` state at the
+	//    very beginning of the time range.
+	// By summing these two counts, we get a total number of fault occurrences.
 	query := fmt.Sprintf(`
-from(bucket: "%s")
-  |> range(start: %s, stop: %s)
-  |> filter(fn: (r) => r["_measurement"] == "%s")
-  |> filter(fn: (r) => %s)
-  |> map(fn: (r) => ({ r with _value: if r._value then 1.0 else 0.0 }))
+transitions = from(bucket: "%[1]s")
+  |> range(start: %[2]s, stop: %[3]s)
+  |> filter(fn: (r) => r["_measurement"] == "%[4]s" and (%[5]s))
+  |> sort(columns: ["_time"])
+  |> map(fn: (r) => ({ r with _value: if r._value then 1 else 0 }))
+  |> difference(nonNegative: false, columns: ["_value"])
+  |> filter(fn: (r) => r._value == 1)
   |> group(columns: ["_field"])
-  |> sum()
+  |> count()
+  |> rename(columns: {_value: "count"})
+
+initial_trues = from(bucket: "%[1]s")
+  |> range(start: %[2]s, stop: %[3]s)
+  |> filter(fn: (r) => r["_measurement"] == "%[4]s" and (%[5]s))
+  |> group(columns: ["_field"])
+  |> first()
+  |> filter(fn: (r) => r._value == true)
+  |> map(fn: (r) => ({_field: r._field, count: 1}))
+  |> keep(columns: ["_field", "count"])
+
+union(tables: [transitions, initial_trues])
+  |> group(columns: ["_field"])
+  |> sum(column: "count")
+  |> rename(columns: {count: "_value"})
+  |> group()
 `, bucket, start, stop, measurement, strings.Join(filters, " or "))
 
 	res, err := c.queryAPI.Query(context.Background(), query)
@@ -318,9 +346,16 @@ from(bucket: "%s")
 	}
 	counts := make(map[string]float64)
 	for res.Next() {
-		field := res.Record().Field()
-		if val, ok := res.Record().Value().(float64); ok {
-			counts[field] = val
+		record := res.Record()
+		// The result of the query has a `_field` column with the fault name.
+		field, ok := record.ValueByKey("_field").(string)
+		if !ok {
+			continue // Should not happen with this query structure
+		}
+
+		// The count() function returns an int64 value in the `_value` column.
+		if val, ok := record.Value().(int64); ok {
+			counts[field] = float64(val)
 		}
 	}
 	return counts, res.Err()
@@ -350,9 +385,11 @@ from(bucket: "%s")
 	}
 	means := make(map[string]float64)
 	for res.Next() {
-		field := res.Record().Field()
-		if val, ok := res.Record().Value().(float64); ok {
-			means[field] = val
+		record := res.Record()
+		if field, ok := record.ValueByKey("_field").(string); ok {
+			if val, ok := record.Value().(float64); ok {
+				means[field] = val
+			}
 		}
 	}
 	return means, res.Err()
