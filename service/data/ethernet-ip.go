@@ -138,7 +138,7 @@ func (plc *PLC) WriteTag(tagName string, tagType string, tagValue interface{}) (
 	return nil, fmt.Errorf("unsupported tag type: %s", tagType)
 }
 
-func LoadFromEthernetIPYAML(cfg *config.Config, plc *PLC, yamlPath string) (map[string]interface{}, error) {
+func LoadFromEthernetIP(cfg *config.Config, plc *PLC) (map[string]interface{}, error) {
 	tag := cfg.Values["PLC_TAG"]
 	length := 100 // default fallback
 	if lstr, ok := cfg.Values["ETHERNET_IP_LENGTH"]; ok {
@@ -156,5 +156,5 @@ func LoadFromEthernetIPYAML(cfg *config.Config, plc *PLC, yamlPath string) (map[
 		log.Printf("Invalid data type returned from Ethernet/IP read")
 		return nil, err
 	}
-	return LoadPLCDataMapFromYAML(yamlPath, rawData)
+	return ParsePLCDataFromRegisters(rawData)
 }

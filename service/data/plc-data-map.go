@@ -10,6 +10,7 @@ import (
 
 // ArchitectYAML represents the structure of architect.yaml
 type ArchitectYAML struct {
+	ProjectMeta   map[string]string `yaml:"project_meta,omitempty"`
 	BooleanFields []struct {
 		Name    string `yaml:"name"`
 		Address int    `yaml:"address"`
@@ -26,20 +27,15 @@ type ArchitectYAML struct {
 	} `yaml:"float_fields"`
 }
 
-// LoadPLCDataMapFromYAML loads the PLCDataMap from registers using architect.yaml mapping (generic for booleans, faults, floats)
-func LoadPLCDataMapFromYAML(yamlPath string, registers []uint16) (map[string]interface{}, error) {
-	data, err := os.ReadFile(yamlPath)
-	if err != nil {
-		return nil, err
-	}
-	var arch ArchitectYAML
-	err = yaml.Unmarshal(data, &arch)
-	if err != nil {
-		return nil, err
-	}
+// ParsePLCDataFromRegisters uses the cached architect.yaml mapping to parse raw register data.
+// This function is optimized to avoid file I/O on every call by using the in-memory cache.
+func ParsePLCDataFromRegisters(registers []uint16) (map[string]interface{}, error) {
+	arch := GetArchitectYAML() // Use the cached version
 
 	result := make(map[string]interface{})
 
+	// The ProjectMeta field from `arch` is intentionally ignored here,
+	// as this function is only concerned with parsing PLC register data.
 	// Booleans
 	for _, field := range arch.BooleanFields {
 		reg := registers[field.Address]
@@ -100,6 +96,15 @@ func GetArchitectYAML() *ArchitectYAML {
 		panic("ArchitectYAML not loaded. Call LoadAndCacheArchitectYAML at startup.")
 	}
 	return CachedArchitectYAML
+}
+
+// GetProjectMeta returns the project metadata from the cached ArchitectYAML.
+// It returns nil if the cache is not loaded or if project_meta is not present.
+func GetProjectMeta() map[string]string {
+	if CachedArchitectYAML == nil {
+		return nil
+	}
+	return CachedArchitectYAML.ProjectMeta
 }
 
 // LoadAndCacheArchitectYAML loads architect.yaml and caches it in memory

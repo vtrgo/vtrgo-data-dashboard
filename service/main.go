@@ -136,9 +136,8 @@ func runEthernetIPCycle(cfg *config.Config, batchWriter *influx.ChannelBatchWrit
 	fullWriteTicker := time.NewTicker(fullWriteInterval)
 	defer fullWriteTicker.Stop()
 	var last map[string]interface{}
-	yamlPath := "../shared/architect.yaml"
 	for {
-		plcData, err := data.LoadFromEthernetIPYAML(cfg, eth, yamlPath)
+		plcData, err := data.LoadFromEthernetIP(cfg, eth)
 		if err != nil {
 			log.Printf("DATA:Error loading PLC data from Ethernet/IP YAML: %v", err)
 			time.Sleep(pollInterval)
@@ -219,7 +218,6 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, batchWriter *in
 	fullWriteTicker := time.NewTicker(fullWriteInterval)
 	defer fullWriteTicker.Stop()
 	var last map[string]interface{}
-	yamlPath := "../shared/architect.yaml"
 	for {
 		if len(server.HoldingRegisters) <= end {
 			log.Println("DATA: Insufficient register length, skipping cycle")
@@ -227,7 +225,7 @@ func runModbusCycle(cfg *config.Config, server *mbserver.Server, batchWriter *in
 			continue
 		}
 		readSlice := server.HoldingRegisters[start : end+1]
-		plcData, err := data.LoadPLCDataMapFromYAML(yamlPath, readSlice)
+		plcData, err := data.ParsePLCDataFromRegisters(readSlice)
 		if err != nil {
 			log.Printf("ERROR: Error loading PLC data from Modbus YAML: %v", err)
 			time.Sleep(pollInterval)

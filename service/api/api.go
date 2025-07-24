@@ -47,6 +47,14 @@ func GetFloatFieldNames() ([]string, error) {
 	return fields, nil
 }
 
+// StatsResponse defines the structure for the /api/stats endpoint response.
+type StatsResponse struct {
+	ProjectMeta        map[string]string  `json:"project_meta,omitempty"`
+	BooleanPercentages map[string]float64 `json:"boolean_percentages"`
+	FaultCounts        map[string]float64 `json:"fault_counts"`
+	FloatAverages      map[string]float64 `json:"float_averages"`
+}
+
 // ---
 
 func isValidFluxTime(input string) bool {
@@ -182,11 +190,16 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			return
 		}
 
-		results := map[string]interface{}{
-			"boolean_percentages": boolResults,
-			"fault_counts":        faultResults,
-			"float_averages":      floatResults,
+		// Get project metadata from the cached YAML
+		projectMeta := data.GetProjectMeta()
+
+		results := StatsResponse{
+			ProjectMeta:        projectMeta,
+			BooleanPercentages: boolResults,
+			FaultCounts:        faultResults,
+			FloatAverages:      floatResults,
 		}
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(results)
 	})

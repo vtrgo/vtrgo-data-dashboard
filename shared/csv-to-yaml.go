@@ -33,9 +33,10 @@ type FloatGroup struct {
 }
 
 type PLCDataMapYAML struct {
-	BooleanFields []PLCFieldYAML `yaml:"boolean_fields"`
-	FaultFields   []PLCFieldYAML `yaml:"fault_fields"`
-	FloatFields   []interface{}  `yaml:"float_fields"`
+	ProjectMeta   map[string]string `yaml:"project_meta,omitempty"`
+	BooleanFields []PLCFieldYAML    `yaml:"boolean_fields"`
+	FaultFields   []PLCFieldYAML    `yaml:"fault_fields"`
+	FloatFields   []interface{}     `yaml:"float_fields"`
 }
 
 // parseSpecifier parses e.g. ModbusDataWrite[1].10 into address=1, bit=10
@@ -72,14 +73,45 @@ func CSVToYAML(csvPath, yamlPath string) error {
 		return err
 	}
 
-	var out PLCDataMapYAML
+	out := PLCDataMapYAML{
+		ProjectMeta: make(map[string]string),
+	}
 	type floatFieldSimple struct {
 		Name    string `yaml:"name"`
 		Address int    `yaml:"address"`
 	}
 	var floatFields []floatFieldSimple
 
-	for _, row := range records[2:] { // skip header lines
+	// Find the header row index, and process remarks along the way
+	headerIndex := -1
+	for i, row := range records {
+		if len(row) > 0 && row[0] == "remark" {
+			if len(row) >= 3 {
+				key := strings.TrimSpace(row[1])
+				value := strings.TrimSpace(row[2])
+				if key != "" {
+					out.ProjectMeta[key] = value
+				}
+			}
+			continue // go to next row
+		}
+
+		if len(row) >= 4 && row[0] == "TYPE" && row[1] == "SCOPE" && row[2] == "NAME" && row[3] == "DESCRIPTION" {
+			headerIndex = i
+			break
+		}
+	}
+
+	// If no project meta was found, make the map nil so it's omitted from YAML
+	if len(out.ProjectMeta) == 0 {
+		out.ProjectMeta = nil
+	}
+
+	if headerIndex == -1 {
+		return fmt.Errorf("header row (starting with TYPE,SCOPE,NAME,DESCRIPTION) not found in CSV file")
+	}
+
+	for _, row := range records[headerIndex+1:] { // Start processing from the line after the header
 		if len(row) < 6 {
 			continue
 		}
