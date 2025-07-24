@@ -21,7 +21,8 @@ type ArchitectYAML struct {
 		Address int    `yaml:"address"`
 		Bit     *int   `yaml:"bit,omitempty"`
 	} `yaml:"fault_fields"`
-	FloatFields []struct {
+	// FloatFields are grouped by subgroup (e.g., "Performance", "HopperVibratory")
+	FloatFields map[string][]struct {
 		Name    string `yaml:"name"`
 		Address int    `yaml:"address"`
 	} `yaml:"float_fields"`
@@ -58,29 +59,33 @@ func ParsePLCDataFromRegisters(registers []uint16) (map[string]interface{}, erro
 		result[field.Name] = val
 	}
 
-	// Floats (robust pairing of HighINT/LowINT)
-	floatPairs := make(map[string]struct{ High, Low *int })
-	for i := 0; i < len(arch.FloatFields); i++ {
-		name := arch.FloatFields[i].Name
-		addr := arch.FloatFields[i].Address
-		if strings.HasSuffix(name, "(HighINT)") {
-			base := strings.TrimSuffix(name, "(HighINT)")
-			p := floatPairs[base]
-			p.High = &addr
-			floatPairs[base] = p
-		} else if strings.HasSuffix(name, "(LowINT)") {
-			base := strings.TrimSuffix(name, "(LowINT)")
-			p := floatPairs[base]
-			p.Low = &addr
-			floatPairs[base] = p
+	// Floats (robust pairing of HighINT/LowINT within each group)
+	for groupName, fields := range arch.FloatFields {
+		floatPairs := make(map[string]struct{ High, Low *int })
+		for i := 0; i < len(fields); i++ {
+			name := fields[i].Name
+			addr := fields[i].Address
+			if strings.HasSuffix(name, "(HighINT)") {
+				base := strings.TrimSuffix(name, "(HighINT)")
+				p := floatPairs[base]
+				p.High = &addr
+				floatPairs[base] = p
+			} else if strings.HasSuffix(name, "(LowINT)") {
+				base := strings.TrimSuffix(name, "(LowINT)")
+				p := floatPairs[base]
+				p.Low = &addr
+				floatPairs[base] = p
+			}
 		}
-	}
-	for base, p := range floatPairs {
-		if p.High != nil && p.Low != nil {
-			high := uint32(registers[*p.High])
-			low := uint32(registers[*p.Low])
-			f := math.Float32frombits((high << 16) | low)
-			result[base] = f
+		for base, p := range floatPairs {
+			if p.High != nil && p.Low != nil {
+				high := uint32(registers[*p.High])
+				low := uint32(registers[*p.Low])
+				f := math.Float32frombits((high << 16) | low)
+				// Create a namespaced field name for InfluxDB, e.g., "Floats.Performance.PartsPerMinute"
+				namespacedKey := "Floats." + groupName + "." + base
+				result[namespacedKey] = f
+			}
 		}
 	}
 

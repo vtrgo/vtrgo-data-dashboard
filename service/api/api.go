@@ -37,16 +37,6 @@ func GetFaultFieldNames() ([]string, error) {
 	return fields, nil
 }
 
-// GetFloatFieldNames loads all float field names from cached architect.yaml (flattened)
-func GetFloatFieldNames() ([]string, error) {
-	mapping := data.GetArchitectYAML()
-	fields := make([]string, 0, len(mapping.FloatFields))
-	for _, f := range mapping.FloatFields {
-		fields = append(fields, f.Name)
-	}
-	return fields, nil
-}
-
 // StatsResponse defines the structure for the /api/stats endpoint response.
 type StatsResponse struct {
 	ProjectMeta        map[string]string  `json:"project_meta,omitempty"`
@@ -65,19 +55,20 @@ func isValidFluxTime(input string) bool {
 	return err == nil
 }
 
-// Helper to strip (HighINT)/(LowINT) and deduplicate
-func getCombinedFloatFields(floatFields []struct {
-	Name    string `yaml:"name"`
-	Address int    `yaml:"address"`
-}) []string {
+// getCombinedFloatFields generates the namespaced float field names for InfluxDB queries.
+// It combines group names with field names (e.g., "Performance.PartsPerMinute").
+func getCombinedFloatFields(arch *data.ArchitectYAML) []string {
 	re := regexp.MustCompile(`\([^)]+\)`)
-	unique := make(map[string]struct{})
-	result := make([]string, 0, len(floatFields))
-	for _, f := range floatFields {
-		combined := re.ReplaceAllString(f.Name, "")
-		if _, exists := unique[combined]; !exists {
-			unique[combined] = struct{}{}
-			result = append(result, combined)
+	var result []string
+	// Iterate over groups to build namespaced field names
+	for groupName, fields := range arch.FloatFields {
+		uniqueBaseNames := make(map[string]struct{})
+		for _, f := range fields {
+			baseName := re.ReplaceAllString(f.Name, "")
+			if _, exists := uniqueBaseNames[baseName]; !exists {
+				uniqueBaseNames[baseName] = struct{}{}
+				result = append(result, "Floats."+groupName+"."+baseName)
+			}
 		}
 	}
 	return result
@@ -163,8 +154,8 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		for _, f := range arch.FaultFields {
 			faultFields = append(faultFields, f.Name)
 		}
-		// Use only the combined/actual influx float fields
-		floatFields := getCombinedFloatFields(arch.FloatFields)
+		// Generate the combined/namespaced float field names for InfluxDB
+		floatFields := getCombinedFloatFields(arch)
 
 		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 		if measurement == "" {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -17,26 +18,16 @@ type PLCFieldYAML struct {
 	Bit     *int   `yaml:"bit,omitempty"`
 }
 
-type VibrationGroup struct {
-	Name   string         `yaml:"name"`
-	Fields []PLCFieldYAML `yaml:"fields"`
-}
-
 type FloatFieldYAML struct {
 	Name    string `yaml:"name"`
 	Address int    `yaml:"address"`
 }
 
-type FloatGroup struct {
-	Name   string           `yaml:"name"`
-	Fields []FloatFieldYAML `yaml:"fields"`
-}
-
 type PLCDataMapYAML struct {
-	ProjectMeta   map[string]string `yaml:"project_meta,omitempty"`
-	BooleanFields []PLCFieldYAML    `yaml:"boolean_fields"`
-	FaultFields   []PLCFieldYAML    `yaml:"fault_fields"`
-	FloatFields   []interface{}     `yaml:"float_fields"`
+	ProjectMeta   map[string]string           `yaml:"project_meta,omitempty"`
+	BooleanFields []PLCFieldYAML              `yaml:"boolean_fields"`
+	FaultFields   []PLCFieldYAML              `yaml:"fault_fields"`
+	FloatFields   map[string][]FloatFieldYAML `yaml:"float_fields"`
 }
 
 // parseSpecifier parses e.g. ModbusDataWrite[1].10 into address=1, bit=10
@@ -52,12 +43,20 @@ func parseSpecifier(spec string) (address int, bit int, err error) {
 	return
 }
 
-func extractGroup(fieldName string) string {
-	// Use the prefix before the first " - " as the group
-	if idx := strings.Index(fieldName, " - "); idx != -1 {
-		return fieldName[:idx]
+// isBooleanGroup checks if the description belongs to a known boolean group.
+// This makes the parser explicit about what it handles, preventing miscategorization.
+func isBooleanGroup(desc string) bool {
+	knownBooleanPrefixes := []string{
+		"SystemStatusBits",
+		"FeederStatusBits",
+		"RobotStatusBits",
 	}
-	return fieldName
+	for _, prefix := range knownBooleanPrefixes {
+		if strings.HasPrefix(desc, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func CSVToYAML(csvPath, yamlPath string) error {
@@ -76,12 +75,8 @@ func CSVToYAML(csvPath, yamlPath string) error {
 	out := PLCDataMapYAML{
 		ProjectMeta: make(map[string]string),
 	}
-	type floatFieldSimple struct {
-		Name    string `yaml:"name"`
-		Address int    `yaml:"address"`
-	}
-	var floatFields []floatFieldSimple
-
+	// Use a temporary map to collect floats by their sub-group.
+	out.FloatFields = make(map[string][]FloatFieldYAML)
 	// Find the header row index, and process remarks along the way
 	headerIndex := -1
 	for i, row := range records {
@@ -134,52 +129,48 @@ func CSVToYAML(csvPath, yamlPath string) error {
 			}
 		}
 
-		// Normalize field name: replace ' - ' with '.' and remove all spaces
-		nameNorm := strings.ReplaceAll(fieldName, " - ", ".")
-		nameNorm = strings.ReplaceAll(nameNorm, " ", "")
+		trimmedDesc := strings.TrimSpace(desc)
+		parts := strings.Split(trimmedDesc, " - ")
+		mainGroup := parts[0]
 
-		// Improved float field detection and naming
-		floatRe := regexp.MustCompile(`(?i)^float[s]?\s*[-.]+\s*`)
-		if floatRe.MatchString(fieldName) {
-			floatName := floatRe.ReplaceAllString(fieldName, "Floats.")
-			floatName = strings.ReplaceAll(floatName, " - ", ".")
-			floatName = strings.ReplaceAll(floatName, " ", "")
-			floatFields = append(floatFields, floatFieldSimple{
-				Name:    floatName,
-				Address: address,
-			})
-			continue
-		}
-
-		group := extractGroup(fieldName)
-		if group == "FaultBits" {
+		if strings.HasPrefix(trimmedDesc, "FaultBits") || strings.HasPrefix(trimmedDesc, "WarningBits") {
+			nameNorm := strings.ReplaceAll(strings.Join(parts, "."), " ", "")
 			out.FaultFields = append(out.FaultFields, PLCFieldYAML{
 				Name:    nameNorm,
 				Address: address,
 				Bit:     bitPtr,
 			})
-		} else if group != "Floats" {
+		} else if strings.HasPrefix(trimmedDesc, "Floats") {
+			// Use a robust regex to capture subgroup and field name, handling variable spacing.
+			re := regexp.MustCompile(`^Floats\s*-\s*(.*?)\s*-\s*(.*)$`)
+			matches := re.FindStringSubmatch(trimmedDesc)
+			if len(matches) != 3 {
+				return fmt.Errorf("malformed float description: '%s'. Expected format 'Floats - SubGroup - FieldName'", desc)
+			}
+			subGroup := strings.ReplaceAll(matches[1], " ", "")
+			fieldName := strings.ReplaceAll(matches[2], " ", "")
+
+			out.FloatFields[subGroup] = append(out.FloatFields[subGroup], FloatFieldYAML{
+				Name:    fieldName,
+				Address: address,
+			})
+		} else if isBooleanGroup(trimmedDesc) {
+			nameNorm := strings.ReplaceAll(strings.Join(parts, "."), " ", "")
 			out.BooleanFields = append(out.BooleanFields, PLCFieldYAML{
 				Name:    nameNorm,
 				Address: address,
 				Bit:     bitPtr,
 			})
+		} else {
+			// Fail fast on any unrecognized group to prevent silent errors.
+			return fmt.Errorf("unrecognized group '%s' in CSV description: '%s'. Please update csv-to-yaml.go to handle this group", mainGroup, desc)
 		}
 	}
-	// Sort float fields by address before appending
-	if len(floatFields) > 1 {
-		for i := 1; i < len(floatFields); i++ {
-			j := i
-			for j > 0 && floatFields[j-1].Address > floatFields[j].Address {
-				floatFields[j-1], floatFields[j] = floatFields[j], floatFields[j-1]
-				j--
-			}
-		}
+	// Sort fields within each float group by address for deterministic output.
+	for _, fields := range out.FloatFields {
+		// Sort fields within the group by address
+		sort.Slice(fields, func(i, j int) bool { return fields[i].Address < fields[j].Address })
 	}
-	for _, ff := range floatFields {
-		out.FloatFields = append(out.FloatFields, ff)
-	}
-
 	outBytes, err := yaml.Marshal(out)
 	if err != nil {
 		return err
