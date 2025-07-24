@@ -7,6 +7,7 @@ import { BooleanPanel } from "@/components/panels/BooleanPanel";
 import { FloatPanel } from "@/components/panels/FloatPanel";
 import { FloatAreaChartPanel } from "@/components/panels/FloatAreaChartPanel";
 import { HealthSummaryPanel } from "@/components/panels/HealthSummaryPanel";
+import { ProjectMetaPanel } from "@/components/panels/ProjectMetaPanel";
 import { FaultBarChartPanel } from "@/components/panels/FaultBarChartPanel";
 import { getRandomTitle } from "@/utils/titles";
 import { getAvailableThemes } from "@/utils/getThemes";
@@ -97,6 +98,7 @@ export default function Dashboard() {
   // Prepare float field list for FloatAreaChartPanel
   const floatFields = data && data.float_averages ? Object.keys(data.float_averages) : [];
 
+  const projectMeta = data?.project_meta || {};
   const partsPerMinute = data?.float_averages?.['Floats.Performance.PartsPerMinute'] ?? 0;
   const systemTotalParts = data?.float_averages?.['Floats.Performance.TotalParts'] ?? 0;
   const autoModePercentage = data?.boolean_percentages?.['SystemStatusBits.AutoMode'] ?? 0;
@@ -134,8 +136,13 @@ export default function Dashboard() {
 
     return (
       <main className="p-6 space-y-10">
+        {Object.keys(projectMeta).length > 0 && (
+          <section className="font-serif">
+            <ProjectMetaPanel meta={projectMeta} className="max-w-2xl mx-auto" />
+          </section>
+        )}
+
         <section className="font-serif">
-          <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Health</h2>
           <HealthSummaryPanel
             partsPerMinute={partsPerMinute}
             systemTotalParts={systemTotalParts}
@@ -149,7 +156,6 @@ export default function Dashboard() {
 
         {floatFields.length > 0 && (
           <section className="font-serif">
-            <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Performance Data</h2>
             <PanelGrid>
               <FloatAreaChartPanel
                 floatFields={floatFields}
@@ -164,7 +170,6 @@ export default function Dashboard() {
         )}
 
         <section className="font-serif">
-          <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Status (% True over {timeRangeLabel})</h2>
           <PanelGrid>
             {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
               <BooleanPanel key={key} title={title} values={values} />
@@ -173,7 +178,6 @@ export default function Dashboard() {
         </section>
 
         <section className="font-serif">
-          <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">Float Averages</h2>
           <PanelGrid>
             {Object.entries(groupedFloats).map(([key, { title, values }]) => (
               <FloatPanel key={key} title={title} values={values} />
