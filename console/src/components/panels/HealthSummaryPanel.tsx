@@ -1,12 +1,14 @@
 import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress";
-import { ShieldCheck, Cpu, AlertTriangle, PlayCircle } from "lucide-react";
+import { ShieldCheck, Cpu, AlertTriangle, PlayCircle, Package, AlertCircle } from "lucide-react";
 
 interface HealthSummaryPanelProps {
   partsPerMinute: number;
+  systemTotalParts: number;
   autoModePercentage: number;
   totalFaults: number;
+  totalWarnings: number;
   timeRangeLabel: string;
   className?: string;
 }
@@ -17,8 +19,10 @@ interface HealthSummaryPanelProps {
  */
 export function HealthSummaryPanel({
   partsPerMinute,
+  systemTotalParts,
   autoModePercentage,
   totalFaults,
+  totalWarnings,
   timeRangeLabel,
   className,
 }: HealthSummaryPanelProps) {
@@ -31,7 +35,8 @@ export function HealthSummaryPanel({
     return "warning";
   }, [autoModePercentage]);
 
-  const faultColorClass = totalFaults > 0 ? "text-warning" : "text-success";
+  const faultColorClass = totalFaults > 0 ? "text-destructive" : "text-success";
+  const warningColorClass = totalWarnings > 0 ? "text-warning" : "text-success";
 
   return (
     <Card className={className}>
@@ -50,6 +55,12 @@ export function HealthSummaryPanel({
           </div>
         </div>
         <div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" />Total Parts</span>
+            <span className="text-lg font-bold">{systemTotalParts.toLocaleString()}</span>
+          </div>
+        </div>
+        <div>
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><PlayCircle className="h-4 w-4" />Automatic Mode</span>
             <span className="text-lg font-bold">{autoModePercentage.toFixed(1)}%</span>
@@ -59,9 +70,17 @@ export function HealthSummaryPanel({
         <div>
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className={`h-4 w-4 ${faultColorClass}`} />Total Faults
+              <AlertTriangle className={`h-4 w-4 ${faultColorClass}`} />Faults
             </span>
             <span className={`text-lg font-bold ${faultColorClass}`}>{totalFaults}</span>
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertCircle className={`h-4 w-4 ${warningColorClass}`} />Warnings
+            </span>
+            <span className={`text-lg font-bold ${warningColorClass}`}>{totalWarnings}</span>
           </div>
         </div>
       </CardContent>

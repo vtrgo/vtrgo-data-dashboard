@@ -98,11 +98,23 @@ export default function Dashboard() {
   const floatFields = data && data.float_averages ? Object.keys(data.float_averages) : [];
 
   const partsPerMinute = data?.float_averages?.['Floats.Performance.PartsPerMinute'] ?? 0;
+  const systemTotalParts = data?.float_averages?.['Floats.Performance.TotalParts'] ?? 0;
   const autoModePercentage = data?.boolean_percentages?.['SystemStatusBits.AutoMode'] ?? 0;
-  const totalFaults = useMemo(() => {
-    if (!data?.fault_counts) return 0;
-    // We cast the values to `number[]` because TypeScript infers them as `unknown[]` from the generic `useStats` hook.
-    return (Object.values(data.fault_counts) as number[]).reduce((sum, count) => sum + count, 0);
+  const { totalFaults, totalWarnings } = useMemo(() => {
+    if (!data?.fault_counts) return { totalFaults: 0, totalWarnings: 0 };
+
+    let faults = 0;
+    let warnings = 0;
+
+    for (const [key, count] of Object.entries(data.fault_counts)) {
+      if (typeof count !== 'number') continue;
+      if (key.startsWith('FaultBits.')) {
+        faults += count;
+      } else if (key.startsWith('WarningBits.')) {
+        warnings += count;
+      }
+    }
+    return { totalFaults: faults, totalWarnings: warnings };
   }, [data?.fault_counts]);
 
   const renderContent = () => {
@@ -126,8 +138,10 @@ export default function Dashboard() {
           <h2 className="text-xl uppercase tracking-widest text-muted-foreground mb-4 italic">System Health</h2>
           <HealthSummaryPanel
             partsPerMinute={partsPerMinute}
+            systemTotalParts={systemTotalParts}
             autoModePercentage={autoModePercentage}
             totalFaults={totalFaults}
+            totalWarnings={totalWarnings}
             timeRangeLabel={timeRangeLabel}
             className="max-w-2xl mx-auto"
           />
