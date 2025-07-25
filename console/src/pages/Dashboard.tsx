@@ -156,6 +156,7 @@ export default function Dashboard() {
 
         {floatFields.length > 0 && (
           <section className="font-serif">
+           <FaultBarChartPanel faults={data.fault_counts || {}} className="max-w-2xl mx-auto" />
             <PanelGrid>
               <FloatAreaChartPanel
                 floatFields={floatFields}

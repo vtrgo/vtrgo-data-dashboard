@@ -10,6 +10,10 @@ export function DashboardSkeleton() {
       </section>
 
       <section className="font-serif">
+        <Skeleton className="h-48 w-full max-w-2xl mx-auto" />
+      </section>
+
+      <section className="font-serif">
         {/* Skeleton for HealthSummaryPanel */}
         <Skeleton className="h-48 w-full max-w-2xl mx-auto" />
       </section>
