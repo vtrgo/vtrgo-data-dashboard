@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useStats } from "@/hooks/useStats";
 import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton";
 import { Title } from "@/components/layout/Title";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DashboardSection } from "@/components/layout/DashboardSection";
 import { BooleanPanel } from "@/components/panels/BooleanPanel";
 import { FloatPanel } from "@/components/panels/FloatPanel";
 import { FloatAreaChartPanel } from "@/components/panels/FloatAreaChartPanel";
@@ -134,14 +136,14 @@ export default function Dashboard() {
     }
 
     return (
-      <main className="p-6 space-y-10">
+      <DashboardLayout>
         {Object.keys(projectMeta).length > 0 && (
-          <section className="font-serif">
-            <ProjectMetaPanel meta={projectMeta} className="max-w-2xl mx-auto" />
-          </section>
+          <DashboardSection>
+            <ProjectMetaPanel meta={projectMeta} />
+          </DashboardSection>
         )}
 
-        <section className="font-serif">
+        <DashboardSection>
           <HealthSummaryPanel
             partsPerMinute={partsPerMinute}
             systemTotalParts={systemTotalParts}
@@ -149,41 +151,39 @@ export default function Dashboard() {
             totalFaults={totalFaults}
             totalWarnings={totalWarnings}
             timeRangeLabel={timeRangeLabel}
-            className="max-w-2xl mx-auto"
           />
-        </section>
+        </DashboardSection>
 
         {floatFields.length > 0 && (
-          <section className="font-serif">
+          <DashboardSection>
             <div className="space-y-10">
-              <FaultBarChartPanel faults={data.fault_counts || {}} className="max-w-2xl mx-auto" />
+              <FaultBarChartPanel faults={data.fault_counts || {}} />
               <FloatAreaChartPanel
                 floatFields={floatFields}
                 start={timeRange.start}
                 stop={timeRange.stop}
                 intervalMs={POLLING_INTERVAL_MS}
-                className="max-w-2xl mx-auto"
               />
             </div>
-          </section>
+          </DashboardSection>
         )}
 
-        <section className="font-serif">
+        <DashboardSection>
           <div className="space-y-10">
             {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
-              <BooleanPanel key={key} title={title} values={values} className="max-w-2xl mx-auto" />
+              <BooleanPanel key={key} title={title} values={values} />
             ))}
           </div>
-        </section>
+        </DashboardSection>
 
-        <section className="font-serif">
+        <DashboardSection>
           <div className="space-y-10">
             {Object.entries(groupedFloats).map(([key, { title, values }]) => (
-              <FloatPanel key={key} title={title} values={values} className="max-w-2xl mx-auto" />
+              <FloatPanel key={key} title={title} values={values} />
             ))}
           </div>
-        </section>
-      </main>
+        </DashboardSection>
+      </DashboardLayout>
     );
   };
 

@@ -1,47 +1,49 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardLayout } from "./DashboardLayout";
+import { DashboardSection } from "./DashboardSection";
 
 export function DashboardSkeleton() {
   return (
-    <main className="p-6 space-y-10">
+    <DashboardLayout>
       {/* Skeleton for ProjectMetaPanel */}
-      <section className="font-serif">
-        <Skeleton className="h-36 w-full max-w-2xl mx-auto" />
-      </section>
+      <DashboardSection>
+        <Skeleton className="h-36 w-full" />
+      </DashboardSection>
 
-      <section className="font-serif">
-        <Skeleton className="h-48 w-full max-w-2xl mx-auto" />
-      </section>
+      <DashboardSection>
+        <Skeleton className="h-48 w-full" />
+      </DashboardSection>
 
-      <section className="font-serif">
-        {/* Skeleton for HealthSummaryPanel */}
-        <Skeleton className="h-48 w-full max-w-2xl mx-auto" />
-      </section>
+      {/* Skeleton for HealthSummaryPanel */}
+      <DashboardSection>
+        <Skeleton className="h-48 w-full" />
+      </DashboardSection>
 
-      <section className="font-serif">
+      <DashboardSection>
         <div className="space-y-10">
           {/* Skeleton for FaultBarChartPanel */}
-          <Skeleton className="h-[300px] w-full max-w-2xl mx-auto" />
+          <Skeleton className="h-[300px] w-full" />
           {/* Skeleton for FloatAreaChartPanel */}
-          <Skeleton className="h-[300px] w-full max-w-2xl mx-auto" />
+          <Skeleton className="h-[300px] w-full" />
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="font-serif">
+      <DashboardSection>
         <div className="space-y-10">
           {/* Create a few skeleton panels */}
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 w-full max-w-2xl mx-auto" />
+            <Skeleton key={i} className="h-48 w-full" />
           ))}
         </div>
-      </section>
+      </DashboardSection>
 
-      <section className="font-serif">
+      <DashboardSection>
         <div className="space-y-10">
           {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 w-full max-w-2xl mx-auto" />
+            <Skeleton key={i} className="h-48 w-full" />
           ))}
         </div>
-      </section>
-    </main>
+      </DashboardSection>
+    </DashboardLayout>
   );
 }
