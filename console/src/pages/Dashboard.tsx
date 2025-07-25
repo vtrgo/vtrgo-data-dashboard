@@ -156,17 +156,16 @@ export default function Dashboard() {
 
         {floatFields.length > 0 && (
           <section className="font-serif">
-           <FaultBarChartPanel faults={data.fault_counts || {}} className="max-w-2xl mx-auto" />
-            <PanelGrid>
+            <div className="space-y-10">
+              <FaultBarChartPanel faults={data.fault_counts || {}} className="max-w-2xl mx-auto" />
               <FloatAreaChartPanel
                 floatFields={floatFields}
                 start={timeRange.start}
                 stop={timeRange.stop}
                 intervalMs={POLLING_INTERVAL_MS}
-                className="col-span-1 md:col-span-2"
+                className="max-w-2xl mx-auto"
               />
-              <FaultBarChartPanel faults={data.fault_counts || {}} className="col-span-1" />
-            </PanelGrid>
+            </div>
           </section>
         )}
 

@@ -19,11 +19,12 @@ export function DashboardSkeleton() {
       </section>
 
       <section className="font-serif">
-        <PanelGrid>
-          {/* Skeleton for FloatAreaChartPanel and FaultBarChartPanel */}
-          <Skeleton className="h-[300px] w-full col-span-1 md:col-span-2" />
-          <Skeleton className="h-[300px] w-full col-span-1" />
-        </PanelGrid>
+        <div className="space-y-10">
+          {/* Skeleton for FaultBarChartPanel */}
+          <Skeleton className="h-[300px] w-full max-w-2xl mx-auto" />
+          {/* Skeleton for FloatAreaChartPanel */}
+          <Skeleton className="h-[300px] w-full max-w-2xl mx-auto" />
+        </div>
       </section>
 
       <section className="font-serif">
