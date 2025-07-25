@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { useStats } from "@/hooks/useStats";
-import { PanelGrid } from "@/components/layout/PanelGrid";
 import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton";
 import { Title } from "@/components/layout/Title";
 import { BooleanPanel } from "@/components/panels/BooleanPanel";
@@ -170,19 +169,19 @@ export default function Dashboard() {
         )}
 
         <section className="font-serif">
-          <PanelGrid>
+          <div className="space-y-10">
             {Object.entries(groupedBooleans).map(([key, { title, values }]) => (
-              <BooleanPanel key={key} title={title} values={values} />
+              <BooleanPanel key={key} title={title} values={values} className="max-w-2xl mx-auto" />
             ))}
-          </PanelGrid>
+          </div>
         </section>
 
         <section className="font-serif">
-          <PanelGrid>
+          <div className="space-y-10">
             {Object.entries(groupedFloats).map(([key, { title, values }]) => (
-              <FloatPanel key={key} title={title} values={values} />
+              <FloatPanel key={key} title={title} values={values} className="max-w-2xl mx-auto" />
             ))}
-          </PanelGrid>
+          </div>
         </section>
       </main>
     );

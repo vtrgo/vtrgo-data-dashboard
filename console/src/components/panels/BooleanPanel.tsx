@@ -5,14 +5,15 @@ import { formatKey } from '@/utils/textFormat';
 type BooleanPanelProps = {
   title: string;
   values: Record<string, number>;
+  className?: string;
 };
 
-export function BooleanPanel({ title, values }: BooleanPanelProps) {
+export function BooleanPanel({ title, values, className }: BooleanPanelProps) {
   const entries = Object.entries(values).sort(([, a], [, b]) => b - a);
   if (!entries.length) return null;
 
   return (
-    <Panel title={title}>
+    <Panel title={title} className={className}>
       <table className="w-full">
         <thead>
           <tr>

@@ -1,4 +1,3 @@
-import { PanelGrid } from "@/components/layout/PanelGrid";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardSkeleton() {
@@ -28,20 +27,20 @@ export function DashboardSkeleton() {
       </section>
 
       <section className="font-serif">
-        <PanelGrid>
+        <div className="space-y-10">
           {/* Create a few skeleton panels */}
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 w-full" />
+            <Skeleton key={i} className="h-48 w-full max-w-2xl mx-auto" />
           ))}
-        </PanelGrid>
+        </div>
       </section>
 
       <section className="font-serif">
-        <PanelGrid>
+        <div className="space-y-10">
           {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 w-full" />
+            <Skeleton key={i} className="h-48 w-full max-w-2xl mx-auto" />
           ))}
-        </PanelGrid>
+        </div>
       </section>
     </main>
   );

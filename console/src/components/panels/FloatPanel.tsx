@@ -5,16 +5,17 @@ import { formatKey } from '@/utils/textFormat';
 type FloatPanelProps = {
   title: string;
   values: Record<string, number>;
+  className?: string;
 };
 
-export function FloatPanel({ title, values }: FloatPanelProps) {
+export function FloatPanel({ title, values, className }: FloatPanelProps) {
   const entries = Object.entries(values).sort(([keyA], [keyB]) =>
     keyA.localeCompare(keyB)
   );
   if (!entries.length) return null;
 
   return (
-    <Panel title={title}>
+    <Panel title={title} className={className}>
       <table className="w-full">
         <tbody>
           {entries.map(([key, value]) => (

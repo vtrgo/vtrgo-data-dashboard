@@ -1,17 +1,20 @@
-// file: console/src/components/ui/panel.tsx
-import React from 'react';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ReactNode } from "react";
 
 export interface PanelProps {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
+  className?: string;
 }
 
-export function Panel({ title, children }: PanelProps) {
+/**
+ * A generic wrapper component that provides a consistent Card-based UI for panels.
+ */
+export function Panel({ title, children, className }: PanelProps) {
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="text-lg font-medium tracking-tight">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {children}
