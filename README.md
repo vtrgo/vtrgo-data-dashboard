@@ -94,53 +94,40 @@ VTArchitect is a Go-based application that implements a Modbus TCP server and in
 
 ```text
 vtarchitect/
-├── .env
-├── .gitignore
+.
 ├── LICENSE
-├── README.md
 ├── MERMAID.md
+├── README.md
 ├── TODO.md
-├── ...
-│
-├── service/ # Go data service application
-│   ├── main.go
-│   ├── go.mod
-│   ├── api/
-│   ├── config/
-│   ├── data/
-│   ├── influx/
-│   ├── tools/
-│   └── ...
-│
-├── console/ # React + Vite frontend application
-│   ├── public/
-│   │   ├── textures/
-│   ├── src/
-│   │   ├── assets/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── pages/
-│   │   ├── utils/
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── index.css
+├── console
+│   ├── README.md
+│   ├── components.json
+│   ├── eslint.config.js
 │   ├── index.html
+│   ├── package-lock.json
 │   ├── package.json
-│   └── vite.config.js
-│
-└── shared/
+│   ├── public
+│   ├── src
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── service
+│   ├── README.md
+│   ├── api
+│   ├── config
+│   ├── data
+│   ├── examples
+│   ├── go.mod
+│   ├── go.sum
+│   ├── influx
+│   ├── main.go
+│   ├── tools
+│   └── vtarchitect
+└── shared
     ├── architect.yaml
-    ├── go-import-tag.csv
-    └── ...
-```
-
-### **Running Tests**
-To run tests:
-```bash
-go test ./...
-```
-
+    ├── architect_original.yaml
+    └── csv-to-yaml.go
 ---
 
 ## **License**
