@@ -101,7 +101,7 @@ export default function Dashboard() {
 
   const projectMeta = data?.project_meta || {};
   const partsPerMinute = data?.float_averages?.['Floats.Performance.PartsPerMinute'] ?? 0;
-  const systemTotalParts = data?.float_averages?.['Floats.Performance.TotalParts'] ?? 0;
+  const systemTotalParts = data?.float_averages?.['Floats.Performance.SystemTotalParts'] ?? 0;
   const autoModePercentage = data?.boolean_percentages?.['SystemStatusBits.AutoMode'] ?? 0;
   const { totalFaults, totalWarnings } = useMemo(() => {
     if (!data?.fault_counts) return { totalFaults: 0, totalWarnings: 0 };

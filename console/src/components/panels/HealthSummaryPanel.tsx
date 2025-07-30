@@ -57,7 +57,7 @@ export function HealthSummaryPanel({
         <div>
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" />Total Parts</span>
-            <span className="text-lg font-bold">{systemTotalParts.toLocaleString()}</span>
+            <span className="text-lg font-bold">{Math.round(systemTotalParts).toLocaleString()}</span>
           </div>
         </div>
         <div>
