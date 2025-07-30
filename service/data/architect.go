@@ -1,6 +1,10 @@
+// file: service/data/architect.go
+//
+//	Data structures and functions for parsing PLC data from registers
 package data
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"strings"
@@ -8,7 +12,8 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-// ArchitectYAML represents the structure of architect.yaml
+// ArchitectYAML represents the structure of the architect.yaml configuration file,
+// which defines how raw PLC data is mapped to meaningful fields.
 type ArchitectYAML struct {
 	ProjectMeta   map[string]string `yaml:"project_meta,omitempty"`
 	BooleanFields []struct {
@@ -28,10 +33,14 @@ type ArchitectYAML struct {
 	} `yaml:"float_fields"`
 }
 
-// ParsePLCDataFromRegisters uses the cached architect.yaml mapping to parse raw register data.
-// This function is optimized to avoid file I/O on every call by using the in-memory cache.
+// ParsePLCDataFromRegisters uses the cached architect.yaml mapping to parse raw
+// register data into a map of field names to their corresponding values.
+// It is optimized to avoid file I/O on every call by using an in-memory cache.
 func ParsePLCDataFromRegisters(registers []uint16) (map[string]interface{}, error) {
-	arch := GetArchitectYAML() // Use the cached version
+	arch, err := GetArchitectYAML()
+	if err != nil {
+		return nil, err
+	}
 
 	result := make(map[string]interface{})
 
@@ -92,27 +101,31 @@ func ParsePLCDataFromRegisters(registers []uint16) (map[string]interface{}, erro
 	return result, nil
 }
 
-// Package-level cache for ArchitectYAML
+// CachedArchitectYAML holds the in-memory representation of the architect.yaml file.
+// It is populated at startup by LoadAndCacheArchitectYAML.
 var CachedArchitectYAML *ArchitectYAML
 
-// GetArchitectYAML returns the cached ArchitectYAML, or logs fatal if not loaded
-func GetArchitectYAML() *ArchitectYAML {
+// GetArchitectYAML returns the cached ArchitectYAML configuration, returning an
+// error if it has not been initialized by calling LoadAndCacheArchitectYAML.
+func GetArchitectYAML() (*ArchitectYAML, error) {
 	if CachedArchitectYAML == nil {
-		panic("ArchitectYAML not loaded. Call LoadAndCacheArchitectYAML at startup.")
+		return nil, fmt.Errorf("ArchitectYAML not loaded. Call LoadAndCacheArchitectYAML at startup")
 	}
-	return CachedArchitectYAML
+	return CachedArchitectYAML, nil
 }
 
 // GetProjectMeta returns the project metadata from the cached ArchitectYAML.
-// It returns nil if the cache is not loaded or if project_meta is not present.
-func GetProjectMeta() map[string]string {
-	if CachedArchitectYAML == nil {
-		return nil
+// It returns an error if the cache is not loaded.
+func GetProjectMeta() (map[string]string, error) {
+	arch, err := GetArchitectYAML()
+	if err != nil {
+		return nil, err
 	}
-	return CachedArchitectYAML.ProjectMeta
+	return arch.ProjectMeta, nil
 }
 
-// LoadAndCacheArchitectYAML loads architect.yaml and caches it in memory
+// LoadAndCacheArchitectYAML reads the architect.yaml file from the given path,
+// parses it, and stores it in a package-level cache for fast access.
 func LoadAndCacheArchitectYAML(path string) error {
 	arch, err := LoadArchitectYAMLFromPath(path)
 	if err != nil {
@@ -122,7 +135,7 @@ func LoadAndCacheArchitectYAML(path string) error {
 	return nil
 }
 
-// LoadArchitectYAMLFromPath loads and parses architect.yaml from a given path
+// LoadArchitectYAMLFromPath loads and parses the architect.yaml file from a given path.
 func LoadArchitectYAMLFromPath(path string) (*ArchitectYAML, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

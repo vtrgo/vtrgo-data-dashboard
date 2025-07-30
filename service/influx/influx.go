@@ -1,3 +1,5 @@
+// file: service/influx/influx.go
+// InfluxDB client and utilities for writing and querying data
 package influx
 
 import (
@@ -397,7 +399,7 @@ from(bucket: "%s")
 
 // GetFloatRange queries a specific float field over a given time range and returns time-value pairs.
 func (c *Client) GetFloatRange(bucket, field, start, stop string) ([]map[string]interface{}, error) {
-	window := inferWindowSize(start, stop) // 👈 new logic here
+	window := inferWindowSize(start) // 👈 new logic here
 
 	query := fmt.Sprintf(`
 from(bucket: "%s")
@@ -430,7 +432,7 @@ from(bucket: "%s")
 	return data, nil
 }
 
-func inferWindowSize(start, stop string) string {
+func inferWindowSize(start string) string {
 	switch {
 	case strings.HasPrefix(start, "-1h"):
 		return "1s"

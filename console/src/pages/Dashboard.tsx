@@ -120,6 +120,11 @@ export default function Dashboard() {
     return { totalFaults: faults, totalWarnings: warnings };
   }, [data?.fault_counts]);
 
+  const hasDisplayableFaults = useMemo(() => {
+    if (!data?.fault_counts) return false;
+    return Object.values(data.fault_counts).some(count => typeof count === 'number' && count > 0);
+  }, [data?.fault_counts]);
+
   const renderContent = () => {
     // Show skeleton only on the initial load when there's no data yet.
     // On subsequent polls, `loading` will be true but we can show the stale data.
@@ -154,16 +159,18 @@ export default function Dashboard() {
           />
         </DashboardSection>
 
-        {floatFields.length > 0 && (
+        {(hasDisplayableFaults || floatFields.length > 0) && (
           <DashboardSection>
             <div className="space-y-10">
-              <FaultBarChartPanel faults={data.fault_counts || {}} />
-              <FloatAreaChartPanel
-                floatFields={floatFields}
-                start={timeRange.start}
-                stop={timeRange.stop}
-                intervalMs={POLLING_INTERVAL_MS}
-              />
+              {hasDisplayableFaults && <FaultBarChartPanel faults={data.fault_counts || {}} />}
+              {floatFields.length > 0 && (
+                <FloatAreaChartPanel
+                  floatFields={floatFields}
+                  start={timeRange.start}
+                  stop={timeRange.stop}
+                  intervalMs={POLLING_INTERVAL_MS}
+                />
+              )}
             </div>
           </DashboardSection>
         )}

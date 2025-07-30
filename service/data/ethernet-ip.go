@@ -1,4 +1,5 @@
-// ethernet-ip.go
+// file: service/data/ethernet-ip.go
+// Package data provides functions to interact with PLCs using Ethernet/IP protocol.
 package data
 
 import (

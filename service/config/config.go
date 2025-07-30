@@ -1,3 +1,5 @@
+// file: service/config/config.go
+// Config package for loading and managing configuration settings
 package config
 
 import (

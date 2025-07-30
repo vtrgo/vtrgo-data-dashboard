@@ -1,41 +1,21 @@
+// file: service/api/api.go
+// API server for VTArchitect that serves various endpoints
 package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"time"
 
 	"vtarchitect/config"
 	"vtarchitect/data"
 	"vtarchitect/influx"
 )
-
-// --- YAML-driven field helpers ---
-
-// GetBooleanFieldNames loads boolean field names from cached architect.yaml
-func GetBooleanFieldNames() ([]string, error) {
-	mapping := data.GetArchitectYAML()
-	fields := make([]string, 0, len(mapping.BooleanFields))
-	for _, f := range mapping.BooleanFields {
-		fields = append(fields, f.Name)
-	}
-	return fields, nil
-}
-
-// GetFaultFieldNames loads fault field names from cached architect.yaml
-func GetFaultFieldNames() ([]string, error) {
-	mapping := data.GetArchitectYAML()
-	fields := make([]string, 0, len(mapping.FaultFields))
-	for _, f := range mapping.FaultFields {
-		fields = append(fields, f.Name)
-	}
-	return fields, nil
-}
 
 // StatsResponse defines the structure for the /api/stats endpoint response.
 type StatsResponse struct {
@@ -55,23 +35,24 @@ func isValidFluxTime(input string) bool {
 	return err == nil
 }
 
-// getCombinedFloatFields generates the namespaced float field names for InfluxDB queries.
-// It combines group names with field names (e.g., "Performance.PartsPerMinute").
-func getCombinedFloatFields(arch *data.ArchitectYAML) []string {
-	re := regexp.MustCompile(`\([^)]+\)`)
-	var result []string
-	// Iterate over groups to build namespaced field names
-	for groupName, fields := range arch.FloatFields {
-		uniqueBaseNames := make(map[string]struct{})
-		for _, f := range fields {
-			baseName := re.ReplaceAllString(f.Name, "")
-			if _, exists := uniqueBaseNames[baseName]; !exists {
-				uniqueBaseNames[baseName] = struct{}{}
-				result = append(result, "Floats."+groupName+"."+baseName)
-			}
-		}
+// parseTimeRange extracts and validates 'start' and 'stop' query parameters from
+// an HTTP request. It provides default values ("-1h" for start, "now()" for stop)
+// if they are not present. It returns an error if the time formats are invalid.
+func parseTimeRange(r *http.Request) (start, stop string, err error) {
+	start = r.URL.Query().Get("start")
+	if start == "" {
+		start = "-1h" // Default start time
+	} else if !isValidFluxTime(start) {
+		return "", "", fmt.Errorf("invalid start time format")
 	}
-	return result
+
+	stop = r.URL.Query().Get("stop")
+	if stop == "" {
+		stop = "now()" // Default stop time
+	} else if !isValidFluxTime(stop) {
+		return "", "", fmt.Errorf("invalid stop time format")
+	}
+	return start, stop, nil
 }
 
 // respondWithError is a helper to send a JSON error message with a status code.
@@ -81,6 +62,10 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 	json.NewEncoder(w).Encode(map[string]string{"message": message})
 }
 
+// StartAPIServer initializes and starts the HTTP server. It sets up all API
+// handlers for querying data and uploading configurations, and also serves the
+// static frontend application. This function blocks and should typically be run
+// in a separate goroutine.
 func StartAPIServer(cfg *config.Config, client *influx.Client) {
 	http.HandleFunc("/api/percentages", func(w http.ResponseWriter, r *http.Request) {
 		bucket := r.URL.Query().Get("bucket")
@@ -88,31 +73,20 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			bucket = cfg.Values["INFLUXDB_BUCKET"]
 		}
 
-		start := r.URL.Query().Get("start")
-		if start == "" {
-			start = "-1h"
-		} else if !isValidFluxTime(start) {
-			http.Error(w, "API: Invalid start time format", http.StatusBadRequest)
-			return
-		}
-
-		stop := r.URL.Query().Get("stop")
-		if stop == "" {
-			stop = "now()"
-		} else if !isValidFluxTime(stop) {
-			http.Error(w, "API: Invalid stop time format", http.StatusBadRequest)
-			return
-		}
-
-		fields, err := GetBooleanFieldNames()
+		start, stop, err := parseTimeRange(r)
 		if err != nil {
-			http.Error(w, "API: Failed to load boolean field names", http.StatusInternalServerError)
+			respondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		fields, err := data.GetBooleanFieldNames()
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Failed to load boolean field names")
 			return
 		}
 		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 		results, err := client.AggregateBooleanPercentages(measurement, bucket, fields, start, stop)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -126,24 +100,17 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			bucket = cfg.Values["INFLUXDB_BUCKET"]
 		}
 
-		start := r.URL.Query().Get("start")
-		if start == "" {
-			start = "-1h"
-		} else if !isValidFluxTime(start) {
-			http.Error(w, "API: Invalid start time format", http.StatusBadRequest)
+		start, stop, err := parseTimeRange(r)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-
-		stop := r.URL.Query().Get("stop")
-		if stop == "" {
-			stop = "now()"
-		} else if !isValidFluxTime(stop) {
-			http.Error(w, "API: Invalid stop time format", http.StatusBadRequest)
-			return
-		}
-
 		// Load field lists from YAML (use cached)
-		arch := data.GetArchitectYAML()
+		arch, err := data.GetArchitectYAML()
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "Server configuration error: "+err.Error())
+			return
+		}
 
 		// Always use the Influx field/tag names from YAML cache for queries
 		booleanFields := make([]string, 0, len(arch.BooleanFields))
@@ -155,7 +122,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			faultFields = append(faultFields, f.Name)
 		}
 		// Generate the combined/namespaced float field names for InfluxDB
-		floatFields := getCombinedFloatFields(arch)
+		floatFields := data.GetCombinedFloatFields(arch)
 
 		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 		if measurement == "" {
@@ -165,27 +132,24 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		// Aggregate booleans (percentage true)
 		boolResults, err := client.AggregateBooleanPercentages(measurement, bucket, booleanFields, start, stop)
 		if err != nil {
-			http.Error(w, "API: Boolean aggregation error: "+err.Error(), http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Boolean aggregation error: "+err.Error())
 			return
 		}
 		// Aggregate faults (count true)
 		faultResults, err := client.AggregateFaultCounts(measurement, bucket, faultFields, start, stop)
 		if err != nil {
-			http.Error(w, "API: Fault aggregation error: "+err.Error(), http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Fault aggregation error: "+err.Error())
 			return
 		}
 		// Aggregate floats (mean)
 		floatResults, err := client.AggregateFloatMeans(measurement, bucket, floatFields, start, stop)
 		if err != nil {
-			http.Error(w, "API: Float aggregation error: "+err.Error(), http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Float aggregation error: "+err.Error())
 			return
 		}
 
-		// Get project metadata from the cached YAML
-		projectMeta := data.GetProjectMeta()
-
 		results := StatsResponse{
-			ProjectMeta:        projectMeta,
+			ProjectMeta:        arch.ProjectMeta,
 			BooleanPercentages: boolResults,
 			FaultCounts:        faultResults,
 			FloatAverages:      floatResults,
@@ -203,36 +167,26 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 
 		field := r.URL.Query().Get("field")
 		if field == "" {
-			http.Error(w, "API: Missing required 'field' query parameter", http.StatusBadRequest)
+			respondWithError(w, http.StatusBadRequest, "Missing required 'field' query parameter")
 			return
 		}
 
-		start := r.URL.Query().Get("start")
-		if start == "" {
-			start = "-1h"
-		} else if !isValidFluxTime(start) {
-			http.Error(w, "API: Invalid start time format", http.StatusBadRequest)
-			return
-		}
-
-		stop := r.URL.Query().Get("stop")
-		if stop == "" {
-			stop = "now()"
-		} else if !isValidFluxTime(stop) {
-			http.Error(w, "API: Invalid stop time format", http.StatusBadRequest)
+		start, stop, err := parseTimeRange(r)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		// Call the InfluxDB client to get the float range data
-		data, err := client.GetFloatRange(bucket, field, start, stop)
+		rangeData, err := client.GetFloatRange(bucket, field, start, stop)
 		if err != nil {
 			log.Printf("ERROR: Error getting float range data for field '%s': %v", field, err)
-			http.Error(w, "API: Failed to retrieve float range data: "+err.Error(), http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Failed to retrieve float range data: "+err.Error())
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(data)
+		json.NewEncoder(w).Encode(rangeData)
 	})
 
 	http.HandleFunc("/api/upload-csv", func(w http.ResponseWriter, r *http.Request) {

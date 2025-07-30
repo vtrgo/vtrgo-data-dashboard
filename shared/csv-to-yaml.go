@@ -1,3 +1,7 @@
+// shared/csv-to-yaml.go
+// csv-to-yaml.go converts a CSV file containing PLC data mappings into a structured YAML format
+// that can be used by the application. It handles various PLC field types and organizes them
+// into a standardized format for easy access and manipulation.
 package main
 
 import (
