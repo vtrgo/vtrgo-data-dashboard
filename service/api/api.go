@@ -3,9 +3,11 @@
 package api
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +18,9 @@ import (
 	"vtarchitect/data"
 	"vtarchitect/influx"
 )
+
+//go:embed static/* static/**/*
+var staticFiles embed.FS
 
 // StatsResponse defines the structure for the /api/stats endpoint response.
 type StatsResponse struct {
@@ -245,7 +250,12 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 	})
 
 	// Serve the static console files
-	http.Handle("/", http.FileServer(http.Dir("../console/dist")))
+	// http.Handle("/", http.FileServer(http.Dir("../console/dist")))
+	subFS, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		log.Fatalf("API: Failed to create sub FS: %v", err)
+	}
+	http.Handle("/", http.FileServer(http.FS(subFS)))
 
 	log.Println("API: API server listening on :8080")
 	http.ListenAndServe(":8080", nil)
