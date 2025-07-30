@@ -9,7 +9,6 @@ import (
 	"vtarchitect/config"
 	"vtarchitect/data"
 	"vtarchitect/influx"
-	"vtarchitect/utils"
 
 	"github.com/tbrandon/mbserver"
 )
@@ -18,11 +17,6 @@ func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("FATAL: Failed to load config: %v", err)
-	}
-
-	log.Println("STARTUP: Checking for CSV and converting to YAML if present...")
-	if err := utils.CheckAndConvertCSV(); err != nil {
-		log.Fatalf("FATAL: CSV to YAML conversion failed: %v", err)
 	}
 
 	log.Println("STARTUP: Loading and caching architect.yaml...")

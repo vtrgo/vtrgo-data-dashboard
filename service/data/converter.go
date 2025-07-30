@@ -1,12 +1,10 @@
-// shared/csv-to-yaml.go
-// csv-to-yaml.go converts a CSV file containing PLC data mappings into a structured YAML format
-// that can be used by the application. It handles various PLC field types and organizes them
-// into a standardized format for easy access and manipulation.
-package main
+// file: service/data/converter.go
+package data
 
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"sort"
@@ -15,6 +13,11 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+// NOTE: These structs define the structure of the architect.yaml file.
+// They are likely defined elsewhere in the `data` package but are included
+// here for clarity. They should be the same structs used by
+// `LoadAndCacheArchitectYAML` and `GetArchitectYAML`.
 
 type PLCFieldYAML struct {
 	Name    string `yaml:"name"`
@@ -63,13 +66,10 @@ func isBooleanGroup(desc string) bool {
 	return false
 }
 
-func CSVToYAML(csvPath, yamlPath string) error {
-	f, err := os.Open(csvPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	reader := csv.NewReader(f)
+// CSVToYAML converts CSV data from an io.Reader into a structured YAML file.
+// It parses PLC data mappings from the CSV and writes them to the specified yamlPath.
+func CSVToYAML(csvInput io.Reader, yamlPath string) error {
+	reader := csv.NewReader(csvInput)
 	reader.FieldsPerRecord = -1
 	records, err := reader.ReadAll()
 	if err != nil {
@@ -120,17 +120,11 @@ func CSVToYAML(csvPath, yamlPath string) error {
 			continue
 		}
 		address, bit, _ := parseSpecifier(spec)
-		fieldName := desc
-		if fieldName == "" {
-			fieldName = row[2]
-		}
 
 		var bitPtr *int
-		if spec != "" {
-			if strings.Contains(spec, ".") { // Only set pointer if bit is present
-				bitPtr = new(int)
-				*bitPtr = bit
-			}
+		if strings.Contains(spec, ".") { // Only set pointer if bit is present
+			bitPtr = new(int)
+			*bitPtr = bit
 		}
 
 		trimmedDesc := strings.TrimSpace(desc)
@@ -139,13 +133,8 @@ func CSVToYAML(csvPath, yamlPath string) error {
 
 		if strings.HasPrefix(trimmedDesc, "FaultBits") || strings.HasPrefix(trimmedDesc, "WarningBits") {
 			nameNorm := strings.ReplaceAll(strings.Join(parts, "."), " ", "")
-			out.FaultFields = append(out.FaultFields, PLCFieldYAML{
-				Name:    nameNorm,
-				Address: address,
-				Bit:     bitPtr,
-			})
+			out.FaultFields = append(out.FaultFields, PLCFieldYAML{Name: nameNorm, Address: address, Bit: bitPtr})
 		} else if strings.HasPrefix(trimmedDesc, "Floats") {
-			// Use a robust regex to capture subgroup and field name, handling variable spacing.
 			re := regexp.MustCompile(`^Floats\s*-\s*(.*?)\s*-\s*(.*)$`)
 			matches := re.FindStringSubmatch(trimmedDesc)
 			if len(matches) != 3 {
@@ -153,26 +142,16 @@ func CSVToYAML(csvPath, yamlPath string) error {
 			}
 			subGroup := strings.ReplaceAll(matches[1], " ", "")
 			fieldName := strings.ReplaceAll(matches[2], " ", "")
-
-			out.FloatFields[subGroup] = append(out.FloatFields[subGroup], FloatFieldYAML{
-				Name:    fieldName,
-				Address: address,
-			})
+			out.FloatFields[subGroup] = append(out.FloatFields[subGroup], FloatFieldYAML{Name: fieldName, Address: address})
 		} else if isBooleanGroup(trimmedDesc) {
 			nameNorm := strings.ReplaceAll(strings.Join(parts, "."), " ", "")
-			out.BooleanFields = append(out.BooleanFields, PLCFieldYAML{
-				Name:    nameNorm,
-				Address: address,
-				Bit:     bitPtr,
-			})
+			out.BooleanFields = append(out.BooleanFields, PLCFieldYAML{Name: nameNorm, Address: address, Bit: bitPtr})
 		} else {
-			// Fail fast on any unrecognized group to prevent silent errors.
-			return fmt.Errorf("unrecognized group '%s' in CSV description: '%s'. Please update csv-to-yaml.go to handle this group", mainGroup, desc)
+			return fmt.Errorf("unrecognized group '%s' in CSV description: '%s'. Please update the converter to handle this group", mainGroup, desc)
 		}
 	}
 	// Sort fields within each float group by address for deterministic output.
 	for _, fields := range out.FloatFields {
-		// Sort fields within the group by address
 		sort.Slice(fields, func(i, j int) bool { return fields[i].Address < fields[j].Address })
 	}
 	outBytes, err := yaml.Marshal(out)
@@ -180,17 +159,4 @@ func CSVToYAML(csvPath, yamlPath string) error {
 		return err
 	}
 	return os.WriteFile(yamlPath, outBytes, 0644)
-}
-
-func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: csv-to-yaml <input.csv> <output.yaml>")
-		os.Exit(1)
-	}
-	err := CSVToYAML(os.Args[1], os.Args[2])
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-	fmt.Println("YAML written to", os.Args[2])
 }

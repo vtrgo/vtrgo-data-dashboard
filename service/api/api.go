@@ -6,11 +6,9 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -200,10 +198,10 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 			return
 		}
 
-		// Limit upload size to 10MB
-		if err := r.ParseMultipartForm(10 << 20); err != nil {
+		// Limit upload size to 1MB to be safe
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
 			log.Println("API: Error parsing multipart form:", err)
-			respondWithError(w, http.StatusBadRequest, "File is too large (max 10MB).")
+			respondWithError(w, http.StatusBadRequest, "File is too large (max 1MB).")
 			return
 		}
 
@@ -215,37 +213,32 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		}
 		defer file.Close()
 
-		log.Printf("API: Uploading File: %s, Size: %d", handler.Filename, handler.Size)
+		log.Printf("API: Received CSV upload: %s, Size: %d. Processing...", handler.Filename, handler.Size)
 
-		uploadDir := config.SharedDir
-		if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-			log.Println("API: Error creating upload directory:", err)
-			respondWithError(w, http.StatusInternalServerError, "Could not create upload directory on server.")
+		// Define the destination for the final YAML file.
+		yamlPath := filepath.Join(config.SharedDir, "architect.yaml")
+
+		// Convert the uploaded CSV stream directly to YAML.
+		if err := data.CSVToYAML(file, yamlPath); err != nil {
+			log.Printf("API: Error converting CSV to YAML: %v", err)
+			respondWithError(w, http.StatusBadRequest, "Failed to process CSV file: "+err.Error())
 			return
 		}
 
-		// Sanitize filename to prevent path traversal.
-		safeFilename := filepath.Base(handler.Filename)
-		dstPath := filepath.Join(uploadDir, safeFilename)
+		log.Printf("API: Successfully converted CSV to %s.", yamlPath)
 
-		dst, err := os.Create(dstPath)
-		if err != nil {
-			log.Println("API: Error creating the destination file:", err)
-			respondWithError(w, http.StatusInternalServerError, "Could not create file on server.")
-			return
-		}
-		defer dst.Close()
-
-		if _, err := io.Copy(dst, file); err != nil {
-			log.Println("API: Error copying file content:", err)
-			respondWithError(w, http.StatusInternalServerError, "Could not save file content.")
+		// After conversion, immediately reload the configuration into the cache.
+		if err := data.LoadAndCacheArchitectYAML(yamlPath); err != nil {
+			log.Printf("API: CRITICAL: Converted YAML but failed to reload it: %v", err)
+			// The file is updated, but the running config is stale. This is a server-side issue.
+			respondWithError(w, http.StatusInternalServerError, "File converted, but server failed to apply new configuration.")
 			return
 		}
 
-		log.Printf("API: Successfully saved file to %s", dstPath)
+		log.Printf("API: New architect.yaml loaded and cached successfully.")
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"message": "File '" + safeFilename + "' uploaded successfully.",
+			"message": "File '" + handler.Filename + "' uploaded, converted, and new configuration applied successfully.",
 		})
 	})
 

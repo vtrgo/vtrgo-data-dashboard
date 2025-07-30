@@ -9,6 +9,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// SharedDir defines the relative path to the shared directory, which contains
+// configuration files like architect.yaml and is used for CSV uploads.
+const SharedDir = "./api"
+
 type Config struct {
 	Values map[string]string
 }
