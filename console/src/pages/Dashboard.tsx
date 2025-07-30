@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useStats } from "@/hooks/useStats";
+import { useFloatRange } from "@/hooks/useFloatRange";
 import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton";
 import { Title } from "@/components/layout/Title";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -63,6 +64,12 @@ function groupFloatsBySection(floats: Record<string, number>) {
 export default function Dashboard() {
   const [timeRange, setTimeRange] = useState({ start: "-1h", stop: "now()" });
   const { data, loading, error } = useStats(timeRange, POLLING_INTERVAL_MS);
+  // Fetch the detailed time-series data for SystemTotalParts
+  const { data: systemTotalPartsData } = useFloatRange(
+    'Floats.Performance.SystemTotalParts',
+    timeRange,
+    POLLING_INTERVAL_MS
+  );
   const [showConfig, setShowConfig] = useState(false);
   const [randomTitle, setRandomTitle] = useState("");
   const randomQuote = inspirationalQuotes[Math.floor(Math.random() * inspirationalQuotes.length)];
@@ -101,7 +108,16 @@ export default function Dashboard() {
 
   const projectMeta = data?.project_meta || {};
   const partsPerMinute = data?.float_averages?.['Floats.Performance.PartsPerMinute'] ?? 0;
-  const systemTotalParts = data?.float_averages?.['Floats.Performance.SystemTotalParts'] ?? 0;
+  const systemTotalParts = useMemo(() => {
+    if (!systemTotalPartsData || systemTotalPartsData.length === 0) {
+      // Fallback to the average from useStats while the specific range data is loading.
+      // This prevents the value from showing 0 temporarily.
+      return data?.float_averages?.['Floats.Performance.SystemTotalParts'] ?? 0;
+    }
+    // The value is a counter, so we want the maximum value in the time range.
+    return Math.max(...systemTotalPartsData.map(d => d.value));
+  }, [systemTotalPartsData, data?.float_averages]);
+
   const autoModePercentage = data?.boolean_percentages?.['SystemStatusBits.AutoMode'] ?? 0;
   const { totalFaults, totalWarnings } = useMemo(() => {
     if (!data?.fault_counts) return { totalFaults: 0, totalWarnings: 0 };
