@@ -6,15 +6,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"vtarchitect/config"
 )
 
-// CheckAndConvertCSV checks for a CSV in tools/csv-to-yaml, converts it to YAML, and deletes the CSV
+// CheckAndConvertCSV checks for a CSV file in the shared directory, converts it to YAML, and deletes the source CSV.
 func CheckAndConvertCSV() error {
-	sharedDir := "../shared"
-	yamlPath := filepath.Join(sharedDir, "architect.yaml")
+	yamlPath := filepath.Join(config.SharedDir, "architect.yaml")
 
 	log.Println("STARTUP: Checking for CSV file in shared directory...")
-	files, err := filepath.Glob(filepath.Join(sharedDir, "*.csv"))
+	files, err := filepath.Glob(filepath.Join(config.SharedDir, "*.csv"))
 	if err != nil {
 		log.Printf("[ERROR] Could not search for CSV: %v", err)
 		return err
@@ -26,7 +27,7 @@ func CheckAndConvertCSV() error {
 
 	csvPath := files[0] // Use the first CSV found
 	log.Printf("STARTUP: Found CSV: %s. Converting to YAML...", csvPath)
-	cmd := exec.Command("go", "run", filepath.Join(sharedDir, "csv-to-yaml.go"), csvPath, yamlPath)
+	cmd := exec.Command("go", "run", filepath.Join(config.SharedDir, "csv-to-yaml.go"), csvPath, yamlPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

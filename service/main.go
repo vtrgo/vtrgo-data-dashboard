@@ -3,6 +3,7 @@ package main
 
 import (
 	"log"
+	"path/filepath"
 
 	"vtarchitect/api"
 	"vtarchitect/config"
@@ -25,7 +26,8 @@ func main() {
 	}
 
 	log.Println("STARTUP: Loading and caching architect.yaml...")
-	err = data.LoadAndCacheArchitectYAML("../shared/architect.yaml")
+	architectPath := filepath.Join(config.SharedDir, "architect.yaml")
+	err = data.LoadAndCacheArchitectYAML(architectPath)
 	if err != nil {
 		log.Fatalf("FATAL: Failed to load architect.yaml: %v", err)
 	}

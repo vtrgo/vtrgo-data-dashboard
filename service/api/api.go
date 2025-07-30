@@ -217,7 +217,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 
 		log.Printf("API: Uploading File: %s, Size: %d", handler.Filename, handler.Size)
 
-		uploadDir := "../shared"
+		uploadDir := config.SharedDir
 		if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
 			log.Println("API: Error creating upload directory:", err)
 			respondWithError(w, http.StatusInternalServerError, "Could not create upload directory on server.")
