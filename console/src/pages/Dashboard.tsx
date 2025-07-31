@@ -70,6 +70,12 @@ export default function Dashboard() {
     timeRange,
     POLLING_INTERVAL_MS
   );
+  // Fetch the detailed time-series data for PartsPerMinute
+  const { data: partsPerMinuteData } = useFloatRange(
+    'Floats.Performance.PartsPerMinute',
+    timeRange,
+    POLLING_INTERVAL_MS
+  );
   const [showConfig, setShowConfig] = useState(false);
   const [randomTitle, setRandomTitle] = useState("");
   const randomQuote = inspirationalQuotes[Math.floor(Math.random() * inspirationalQuotes.length)];
@@ -107,18 +113,28 @@ export default function Dashboard() {
   const floatFields = data && data.float_averages ? Object.keys(data.float_averages) : [];
 
   const projectMeta = data?.project_meta || {};
-  const partsPerMinute = data?.float_averages?.['Floats.Performance.PartsPerMinute'] ?? 0;
+  const partsPerMinute = useMemo(() => {
+    if (!partsPerMinuteData || partsPerMinuteData.length === 0) {
+      // Fallback to the average from useStats while the specific range data is loading.
+      return data?.float_averages?.['Floats.Performance.PartsPerMinute'] ?? 0;
+    }
+    // The data is sorted by time, so the last point is the latest value.
+    return partsPerMinuteData[partsPerMinuteData.length - 1].value;
+  }, [partsPerMinuteData, data?.float_averages]);
+
   const systemTotalParts = useMemo(() => {
     if (!systemTotalPartsData || systemTotalPartsData.length === 0) {
       // Fallback to the average from useStats while the specific range data is loading.
       // This prevents the value from showing 0 temporarily.
       return data?.float_averages?.['Floats.Performance.SystemTotalParts'] ?? 0;
     }
-    // The value is a counter, so we want the maximum value in the time range.
-    return Math.max(...systemTotalPartsData.map(d => d.value));
+    // The data is sorted by time, so the last point is the latest value.
+    // This represents the most up-to-date total parts count.
+    return systemTotalPartsData[systemTotalPartsData.length - 1].value;
   }, [systemTotalPartsData, data?.float_averages]);
 
   const autoModePercentage = data?.boolean_percentages?.['SystemStatusBits.AutoMode'] ?? 0;
+
   const { totalFaults, totalWarnings } = useMemo(() => {
     if (!data?.fault_counts) return { totalFaults: 0, totalWarnings: 0 };
 

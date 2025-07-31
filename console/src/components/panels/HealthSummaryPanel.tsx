@@ -50,7 +50,7 @@ export function HealthSummaryPanel({
       <CardContent className="space-y-6 pt-2">
         <div>
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Cpu className="h-4 w-4" />Avg. Parts Per Minute</span>
+            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Cpu className="h-4 w-4" />Parts Per Minute</span>
             <span className="text-lg font-bold">{partsPerMinute.toFixed(1)}</span>
           </div>
         </div>
@@ -62,7 +62,9 @@ export function HealthSummaryPanel({
         </div>
         <div>
           <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><PlayCircle className="h-4 w-4" />Automatic Mode</span>
+            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <PlayCircle className="h-4 w-4" />Automatic Mode
+            </span>
             <span className="text-lg font-bold">{autoModePercentage.toFixed(1)}%</span>
           </div>
           <Progress value={autoModePercentage} variant={autoModeVariant} />
