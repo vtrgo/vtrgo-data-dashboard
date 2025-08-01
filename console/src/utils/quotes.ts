@@ -18,7 +18,7 @@ export const inspirationalQuotes = [
   "Sustainable progress comes from disciplined iteration.",
   "Order emerges through thoughtful design.",
   "Every constraint is an opportunity for innovation.",
-    "Clarity in inputs births clarity in outcomes.",
+  "Are you on the controls team at VTR? Because you just fed the perfect signal to my heart.",
   "Every stable system is an echo of principled design.",
   "Intelligence is not speed, but the calibration of response.",
   "Refinement is the art of eliminating the unnecessary.",
