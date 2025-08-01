@@ -35,3 +35,6 @@ vtarchitect
 
 # YAML Files
 *.yaml
+
+# Build artifacts
+/service/api/static/
