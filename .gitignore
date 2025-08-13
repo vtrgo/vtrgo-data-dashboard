@@ -40,5 +40,5 @@ vtarchitect
 /service/api/static/
 
 # --- GEMINI ---
-!GEMINI.md
-!**/GEMINI.md
+GEMINI.md
+**/GEMINI.md
