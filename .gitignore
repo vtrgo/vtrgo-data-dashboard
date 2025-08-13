@@ -38,3 +38,7 @@ vtarchitect
 
 # Build artifacts
 /service/api/static/
+
+# --- GEMINI ---
+!GEMINI.md
+!**/GEMINI.md
