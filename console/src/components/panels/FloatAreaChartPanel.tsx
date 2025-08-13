@@ -64,6 +64,13 @@ export function FloatAreaChartPanel({
     return data.map((d) => ({ time: new Date(d.time), value: d.value }));
   }, [data]);
 
+
+  const averageValue = useMemo(() => {
+    if (!chartData || chartData.length === 0) return null;
+    const sum = chartData.reduce((acc, item) => acc + item.value, 0);
+    return sum / chartData.length;
+  }, [chartData]);
+
   const tickFormatter = useMemo(() => {
     // A simple way to check if the range is more than a day.
     // A more robust solution might parse the start string more carefully.
@@ -81,20 +88,31 @@ export function FloatAreaChartPanel({
   }, [start]);
 
   const headerContent = (
-    <select
-      className="border px-2 py-1 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring w-fit"
-      onChange={(e) => setSelectedField(e.target.value)}
-      value={selectedField}
-      disabled={floatFields.length <= 1}
-      aria-label="Select a data field to display"
-    >
-      {floatFields.length === 0 && <option>No fields available</option>}
-      {floatFields.map((fieldKey) => (
-        <option key={fieldKey} value={fieldKey}>
-          {getFieldLabel(fieldKey)}
-        </option>
-      ))}
-    </select>
+    <div className="flex items-start gap-4">
+      {averageValue !== null && (
+        <div className="text-right">
+          <div className="text-xs text-muted-foreground">Average</div>
+          <div className="text-lg font-bold text-primary">
+            {averageValue.toFixed(2)}
+            <span className="text-sm font-normal text-muted-foreground ml-1">{fieldUnit}</span>
+          </div>
+        </div>
+      )}
+      <select
+        className="border px-2 py-1 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring w-fit"
+        onChange={(e) => setSelectedField(e.target.value)}
+        value={selectedField}
+        disabled={floatFields.length <= 1}
+        aria-label="Select a data field to display"
+      >
+        {floatFields.length === 0 && <option>No fields available</option>}
+        {floatFields.map((fieldKey) => (
+          <option key={fieldKey} value={fieldKey}>
+            {getFieldLabel(fieldKey)}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 
   return (

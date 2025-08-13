@@ -109,7 +109,7 @@ export function getUnit(key: string | ParsedKey): string {
   const leafKey = parsed.subgroup || parsed.field;
 
   if (/^Vibration[XYZ]$/.test(leafKey)) {
-    return "mm/s²";
+    return "mm/s";
   }
 
   switch (leafKey) {

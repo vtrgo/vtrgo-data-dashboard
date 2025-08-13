@@ -14,29 +14,31 @@ export function ProjectMetaPanel({ meta, className }: ProjectMetaPanelProps) {
     return null;
   }
 
-  // Define a preferred order for some important fields
-  const orderedKeys = [
+  // Define the main project fields that have a specific display order.
+  const mainKeys = [
     'Project Name',
     'Project Number',
     'Project Description',
     'Manufacturer',
     'Created On',
-    'Input Voltage',
-    'Input Phase',
-    'Input Frequency',
-    'Input Current',
-    'Control Voltage',
-    'Output Power',
-    'Enclosure Rating',
   ];
 
+  // Sort the metadata. Main keys come first in their specified order,
+  // followed by all other keys (electrical specs) sorted alphabetically.
   const sortedMeta = Object.entries(meta).sort(([keyA], [keyB]) => {
-    const indexA = orderedKeys.indexOf(keyA);
-    const indexB = orderedKeys.indexOf(keyB);
-    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-    if (indexA !== -1) return -1;
-    if (indexB !== -1) return 1;
-    return keyA.localeCompare(keyB);
+    const indexA = mainKeys.indexOf(keyA);
+    const indexB = mainKeys.indexOf(keyB);
+
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB; // Both are main keys, sort by predefined order
+    }
+    if (indexA !== -1) {
+      return -1; // A is a main key, so it comes first
+    }
+    if (indexB !== -1) {
+      return 1; // B is a main key, so it comes first
+    }
+    return keyA.localeCompare(keyB); // Neither are main keys, sort alphabetically
   });
 
   const projectName = meta['Project Name'] || 'Project Information';
@@ -53,9 +55,8 @@ export function ProjectMetaPanel({ meta, className }: ProjectMetaPanelProps) {
     }
   }
 
-  const electricalFields = sortedMeta.filter(([key]) =>
-    !['Project Name', 'Project Number', 'Project Description', 'Manufacturer', 'Created On'].includes(key)
-  );
+  // Any field not in mainKeys is considered an electrical field.
+  const electricalFields = sortedMeta.filter(([key]) => !mainKeys.includes(key));
 
   return (
     <Card className={className}>
