@@ -76,6 +76,12 @@ export default function Dashboard() {
     timeRange,
     POLLING_INTERVAL_MS
   );
+  // Fetch the detailed time-series data for CycleTime
+  const { data: cycleTimeData } = useFloatRange(
+    'Floats.Performance.CycleTime',
+    timeRange,
+    POLLING_INTERVAL_MS
+  );
   const [showConfig, setShowConfig] = useState(false);
   const [randomTitle, setRandomTitle] = useState("");
   const randomQuote = inspirationalQuotes[Math.floor(Math.random() * inspirationalQuotes.length)];
@@ -133,6 +139,13 @@ export default function Dashboard() {
     return systemTotalPartsData[systemTotalPartsData.length - 1].value;
   }, [systemTotalPartsData, data?.float_averages]);
 
+  const currentCycleTime = useMemo(() => {
+    if (!cycleTimeData || cycleTimeData.length === 0) {
+      return data?.float_averages?.['Floats.Performance.CycleTime'] ?? 0;
+    }
+    return cycleTimeData[cycleTimeData.length - 1].value;
+  }, [cycleTimeData, data?.float_averages]);
+
   const autoModePercentage = data?.boolean_percentages?.['SystemStatusBits.AutoMode'] ?? 0;
 
   const { totalFaults, totalWarnings } = useMemo(() => {
@@ -189,6 +202,7 @@ export default function Dashboard() {
             totalWarnings={totalWarnings}
             timeRangeLabel={timeRangeLabel}
 			systemStatus={data.system_status || {}}
+            currentCycleTime={currentCycleTime}
           />
         </DashboardSection>
 

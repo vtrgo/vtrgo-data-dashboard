@@ -13,6 +13,7 @@ interface HealthSummaryPanelProps {
   timeRangeLabel: string;
   className?: string;
   systemStatus: Record<string, boolean>;
+  currentCycleTime: number;
 }
 
 /**
@@ -28,6 +29,7 @@ export function HealthSummaryPanel({
   timeRangeLabel,
   className,
   systemStatus,
+  currentCycleTime,
 }: HealthSummaryPanelProps) {
   const title = `System Health Summary`;
 
@@ -58,13 +60,19 @@ export function HealthSummaryPanel({
               <SystemStatusIndicator key={key} statusName={key} isActive={value} />
             ))}
           </div>
-          <div className="flex justify-between items-center mt-4">
-            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Cpu className="h-4 w-4" />Parts Per Minute</span>
-            <span className="text-lg font-bold">{partsPerMinute.toFixed(1)}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" />Total Parts</span>
-            <span className="text-lg font-bold">{Math.round(systemTotalParts).toLocaleString()}</span>
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            <div className="flex flex-col items-center justify-center p-4 border rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><PlayCircle className="h-4 w-4" />Cycle Time</span>
+              <span className="text-lg font-bold">{currentCycleTime.toFixed(1)}s</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 border rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Cpu className="h-4 w-4" />Parts/Min</span>
+              <span className="text-lg font-bold">{partsPerMinute.toFixed(1)}</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 border rounded-lg">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" />Total Parts</span>
+              <span className="text-lg font-bold">{Math.round(systemTotalParts).toLocaleString()}</span>
+            </div>
           </div>
         </div>
         <div>
