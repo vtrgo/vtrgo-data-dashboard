@@ -2,6 +2,7 @@ import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress";
 import { ShieldCheck, Cpu, AlertTriangle, PlayCircle, Package, AlertCircle } from "lucide-react";
+import { SystemStatusIndicator } from "@/components/ui/SystemStatusIndicator";
 
 interface HealthSummaryPanelProps {
   partsPerMinute: number;
@@ -11,6 +12,7 @@ interface HealthSummaryPanelProps {
   totalWarnings: number;
   timeRangeLabel: string;
   className?: string;
+  systemStatus: Record<string, boolean>;
 }
 
 /**
@@ -25,6 +27,7 @@ export function HealthSummaryPanel({
   totalWarnings,
   timeRangeLabel,
   className,
+  systemStatus,
 }: HealthSummaryPanelProps) {
   const title = `System Health Summary`;
 
@@ -45,22 +48,27 @@ export function HealthSummaryPanel({
           <ShieldCheck className="h-5 w-5 text-primary" />
           <span>{title}</span>
         </CardTitle>
-        <p className="text-sm text-muted-foreground pt-1">Overall status for the last {timeRangeLabel}.</p>
+        <p className="text-sm text-muted-foreground pt-1">A high-level overview of the system's health.</p>
       </CardHeader>
       <CardContent className="space-y-6 pt-2">
         <div>
-          <div className="flex justify-between items-center">
+          <h3 className="text-md font-medium text-primary mb-2">Current Status</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {Object.entries(systemStatus).map(([key, value]) => (
+              <SystemStatusIndicator key={key} statusName={key} isActive={value} />
+            ))}
+          </div>
+          <div className="flex justify-between items-center mt-4">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Cpu className="h-4 w-4" />Parts Per Minute</span>
             <span className="text-lg font-bold">{partsPerMinute.toFixed(1)}</span>
           </div>
-        </div>
-        <div>
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" />Total Parts</span>
             <span className="text-lg font-bold">{Math.round(systemTotalParts).toLocaleString()}</span>
           </div>
         </div>
         <div>
+          <h3 className="text-md font-medium text-primary mb-2">Status for the past {timeRangeLabel}</h3>
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <PlayCircle className="h-4 w-4" />Automatic Mode
@@ -68,16 +76,12 @@ export function HealthSummaryPanel({
             <span className="text-lg font-bold">{autoModePercentage.toFixed(1)}%</span>
           </div>
           <Progress value={autoModePercentage} variant={autoModeVariant} />
-        </div>
-        <div>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mt-4">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle className={`h-4 w-4 ${faultColorClass}`} />Faults
             </span>
             <span className={`text-lg font-bold ${faultColorClass}`}>{totalFaults}</span>
           </div>
-        </div>
-        <div>
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertCircle className={`h-4 w-4 ${warningColorClass}`} />Warnings

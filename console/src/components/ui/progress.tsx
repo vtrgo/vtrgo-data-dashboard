@@ -19,7 +19,7 @@ const progressRootVariants = cva("relative h-4 w-full overflow-hidden rounded-fu
   },
 })
 
-const progressIndicatorVariants = cva("h-full flex-1 transition-all bg-gradient-to-r", {
+const progressIndicatorVariants = cva("h-full w-full flex-1 transition-all bg-gradient-to-r", {
   variants: {
     variant: {
       default: "bg-primary",
@@ -34,7 +34,9 @@ const progressIndicatorVariants = cva("h-full flex-1 transition-all bg-gradient-
 
 export interface ProgressProps
   extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>,
-    VariantProps<typeof progressIndicatorVariants> {}
+    VariantProps<typeof progressIndicatorVariants> {
+      value?: number | null;
+    }
 
 const Progress = React.forwardRef<React.ComponentRef<typeof ProgressPrimitive.Root>, ProgressProps>(
   ({ className, value, variant, ...props }, ref) => (
@@ -46,7 +48,7 @@ const Progress = React.forwardRef<React.ComponentRef<typeof ProgressPrimitive.Ro
   >
     <ProgressPrimitive.Indicator
       className={cn(progressIndicatorVariants({ variant }))}
-      style={{ width: `${value || 0}%` }}
+      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </ProgressPrimitive.Root>
 ))

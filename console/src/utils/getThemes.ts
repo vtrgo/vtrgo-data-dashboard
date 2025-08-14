@@ -24,7 +24,7 @@ export function getAvailableThemes(): string[] {
           }
         }
       }
-    } catch (err) {
+    } catch (_err) {
       // Cross-origin stylesheet or inaccessible
       continue;
     }

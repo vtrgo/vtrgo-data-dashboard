@@ -188,6 +188,7 @@ export default function Dashboard() {
             totalFaults={totalFaults}
             totalWarnings={totalWarnings}
             timeRangeLabel={timeRangeLabel}
+			systemStatus={data.system_status || {}}
           />
         </DashboardSection>
 

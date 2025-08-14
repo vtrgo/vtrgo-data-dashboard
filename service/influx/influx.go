@@ -460,3 +460,42 @@ func inferWindowSize(start string) string {
 		return "5m" // fallback for short or malformed inputs
 	}
 }
+
+// GetSystemStatus retrieves the most recent boolean value for each of the system status fields.
+func (c *Client) GetSystemStatus(measurement, bucket string, fields []string) (map[string]bool, error) {
+	if len(fields) == 0 {
+		return map[string]bool{}, nil
+	}
+	var filters []string
+	for _, f := range fields {
+		filters = append(filters, fmt.Sprintf(`r["_field"] == "%s"`, f))
+	}
+	query := fmt.Sprintf(`
+from(bucket: "%s")
+  |> range(start: -1d) // Limit to the last day to make the query faster
+  |> filter(fn: (r) => r["_measurement"] == "%s")
+  |> filter(fn: (r) => %s)
+  |> group(columns: ["_field"])
+  |> last()
+`, bucket, measurement, strings.Join(filters, " or "))
+
+	res, err := c.queryAPI.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	statuses := make(map[string]bool)
+	for res.Next() {
+		record := res.Record()
+		field, ok := record.ValueByKey("_field").(string)
+		if !ok {
+			continue
+		}
+		value, ok := record.Value().(bool)
+		if !ok {
+			continue
+		}
+		statuses[field] = value
+	}
+	return statuses, res.Err()
+}

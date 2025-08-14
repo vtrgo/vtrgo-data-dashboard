@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"vtarchitect/config"
@@ -23,6 +24,7 @@ var staticFiles embed.FS
 // StatsResponse defines the structure for the /api/stats endpoint response.
 type StatsResponse struct {
 	ProjectMeta        map[string]string  `json:"project_meta,omitempty"`
+	SystemStatus       map[string]bool    `json:"system_status"`
 	BooleanPercentages map[string]float64 `json:"boolean_percentages"`
 	FaultCounts        map[string]float64 `json:"fault_counts"`
 	FloatAverages      map[string]float64 `json:"float_averages"`
@@ -127,9 +129,24 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 		// Generate the combined/namespaced float field names for InfluxDB
 		floatFields := data.GetCombinedFloatFields(arch)
 
+		// Get the system status fields
+		systemStatusFields := make([]string, 0)
+		for _, f := range arch.BooleanFields {
+			if strings.HasPrefix(f.Name, "SystemStatusBits") {
+				systemStatusFields = append(systemStatusFields, f.Name)
+			}
+		}
+
 		measurement := cfg.Values["INFLUXDB_MEASUREMENT"]
 		if measurement == "" {
 			measurement = "status_data"
+		}
+
+		// Get the latest system status
+		systemStatus, err := client.GetSystemStatus(measurement, bucket, systemStatusFields)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, "System status error: "+err.Error())
+			return
 		}
 
 		// Aggregate booleans (percentage true)
@@ -153,6 +170,7 @@ func StartAPIServer(cfg *config.Config, client *influx.Client) {
 
 		results := StatsResponse{
 			ProjectMeta:        arch.ProjectMeta,
+			SystemStatus:       systemStatus,
 			BooleanPercentages: boolResults,
 			FaultCounts:        faultResults,
 			FloatAverages:      floatResults,
