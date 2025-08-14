@@ -147,6 +147,9 @@ export default function Dashboard() {
   }, [cycleTimeData, data?.float_averages]);
 
   const autoModePercentage = data?.boolean_percentages?.['SystemStatusBits.AutoMode'] ?? 0;
+  const controlPowerOnPercentage = data?.boolean_percentages?.['SystemStatusBits.ControlPowerOn'] ?? 0;
+  const estopOkPercentage = data?.boolean_percentages?.['SystemStatusBits.EstopOK'] ?? 0;
+  const systemFaultedPercentage = data?.boolean_percentages?.['SystemStatusBits.SystemFaulted'] ?? 0;
 
   const { totalFaults, totalWarnings } = useMemo(() => {
     if (!data?.fault_counts) return { totalFaults: 0, totalWarnings: 0 };
@@ -198,6 +201,9 @@ export default function Dashboard() {
             partsPerMinute={partsPerMinute}
             systemTotalParts={systemTotalParts}
             autoModePercentage={autoModePercentage}
+            controlPowerOnPercentage={controlPowerOnPercentage}
+            estopOkPercentage={estopOkPercentage}
+            systemFaultedPercentage={systemFaultedPercentage}
             totalFaults={totalFaults}
             totalWarnings={totalWarnings}
             timeRangeLabel={timeRangeLabel}

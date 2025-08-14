@@ -12,6 +12,7 @@ const progressRootVariants = cva("relative h-4 w-full overflow-hidden rounded-fu
       default: "bg-secondary",
       success: "bg-success/20",
       warning: "bg-warning/20",
+      destructive: "bg-destructive/20",
     },
   },
   defaultVariants: {
@@ -25,6 +26,7 @@ const progressIndicatorVariants = cva("h-full w-full flex-1 transition-all bg-gr
       default: "bg-primary",
       success: "from-success/20 to-success",
       warning: "from-warning/20 to-warning",
+      destructive: "from-destructive/20 to-destructive",
     },
   },
   defaultVariants: {

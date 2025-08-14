@@ -8,6 +8,9 @@ interface HealthSummaryPanelProps {
   partsPerMinute: number;
   systemTotalParts: number;
   autoModePercentage: number;
+  controlPowerOnPercentage: number;
+  estopOkPercentage: number;
+  systemFaultedPercentage: number;
   totalFaults: number;
   totalWarnings: number;
   timeRangeLabel: string;
@@ -24,6 +27,9 @@ export function HealthSummaryPanel({
   partsPerMinute,
   systemTotalParts,
   autoModePercentage,
+  controlPowerOnPercentage,
+  estopOkPercentage,
+  systemFaultedPercentage,
   totalFaults,
   totalWarnings,
   timeRangeLabel,
@@ -39,6 +45,27 @@ export function HealthSummaryPanel({
     }
     return "warning";
   }, [autoModePercentage]);
+
+  const controlPowerOnVariant = useMemo((): "success" | "warning" => {
+    if (controlPowerOnPercentage >= 90) {
+      return "success";
+    }
+    return "warning";
+  }, [controlPowerOnPercentage]);
+
+  const estopOkVariant = useMemo((): "success" | "warning" => {
+    if (estopOkPercentage >= 90) {
+      return "success";
+    }
+    return "warning";
+  }, [estopOkPercentage]);
+
+  const systemFaultedVariant = useMemo((): "success" | "destructive" => {
+    if (systemFaultedPercentage > 0) {
+      return "destructive";
+    }
+    return "success";
+  }, [systemFaultedPercentage]);
 
   const faultColorClass = totalFaults > 0 ? "text-destructive" : "text-success";
   const warningColorClass = totalWarnings > 0 ? "text-warning" : "text-success";
@@ -77,24 +104,47 @@ export function HealthSummaryPanel({
         </div>
         <div>
           <h3 className="text-md font-medium text-primary mb-2">Status for the past {timeRangeLabel}</h3>
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <PlayCircle className="h-4 w-4" />Automatic Mode
-            </span>
-            <span className="text-lg font-bold">{autoModePercentage.toFixed(1)}%</span>
-          </div>
-          <Progress value={autoModePercentage} variant={autoModeVariant} />
-          <div className="flex justify-between items-center mt-4">
-            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className={`h-4 w-4 ${faultColorClass}`} />Faults
-            </span>
-            <span className={`text-lg font-bold ${faultColorClass}`}>{totalFaults}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className={`h-4 w-4 ${warningColorClass}`} />Warnings
-            </span>
-            <span className={`text-lg font-bold ${warningColorClass}`}>{totalWarnings}</span>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2 w-32">
+                <PlayCircle className="h-4 w-4" />Automatic Mode
+              </span>
+              <Progress value={autoModePercentage} variant={autoModeVariant} className="flex-1" />
+              <span className="text-sm font-bold w-12 text-right">{autoModePercentage.toFixed(1)}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2 w-32">
+                <PlayCircle className="h-4 w-4" />Control Power On
+              </span>
+              <Progress value={controlPowerOnPercentage} variant={controlPowerOnVariant} className="flex-1" />
+              <span className="text-sm font-bold w-12 text-right">{controlPowerOnPercentage.toFixed(1)}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2 w-32">
+                <PlayCircle className="h-4 w-4" />E-Stop OK
+              </span>
+              <Progress value={estopOkPercentage} variant={estopOkVariant} className="flex-1" />
+              <span className="text-sm font-bold w-12 text-right">{estopOkPercentage.toFixed(1)}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2 w-32">
+                <AlertTriangle className="h-4 w-4" />System Faulted
+              </span>
+              <Progress value={systemFaultedPercentage} variant={systemFaultedVariant} className="flex-1" />
+              <span className="text-sm font-bold w-12 text-right">{systemFaultedPercentage.toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between items-center mt-4 col-span-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <AlertTriangle className={`h-4 w-4 ${faultColorClass}`} />Faults
+              </span>
+              <span className={`text-lg font-bold ${faultColorClass}`}>{totalFaults}</span>
+            </div>
+            <div className="flex justify-between items-center col-span-2">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <AlertCircle className={`h-4 w-4 ${warningColorClass}`} />Warnings
+              </span>
+              <span className={`text-lg font-bold ${warningColorClass}`}>{totalWarnings}</span>
+            </div>
           </div>
         </div>
       </CardContent>
