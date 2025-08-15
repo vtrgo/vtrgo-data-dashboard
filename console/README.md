@@ -125,10 +125,16 @@ pnpm run preview
 
 ## Adding shadcn/ui Components
 
-This project uses `shadcn/ui` for its base components. To add new ones, run the CLI command:
+This project uses `shadcn/ui` for its base components. To add new ones, you first need to initialize the project:
 
 ```bash
-pnpm dlx shadcn-ui@latest add [component-name]
+pnpm dlx shadcn@latest init
+```
+
+Then, you can add new components:
+
+```bash
+pnpm dlx shadcn@latest add [component-name]
 ```
 
 Refer to the shadcn/ui documentation for a list of available components.

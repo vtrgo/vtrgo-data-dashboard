@@ -9,12 +9,12 @@ A backend service for industrial data acquisition, processing, and visualization
 *   **Efficient Time-Series Logging**: Intelligently detects data changes and only writes new data points to InfluxDB, minimizing storage and network overhead. A periodic full-state write ensures data synchronization.
 *   **Batch Writing**: Buffers data points and writes them to InfluxDB in batches for improved performance.
 *   **REST API**: Provides endpoints to query aggregated statistics (e.g., uptime percentages, fault counts, average values) and detailed time-series data for frontend applications.
-*   **Dynamic Mapping Updates**: Supports updating the core `architect.yaml` mapping by uploading a CSV file via an API endpoint, which is automatically converted on service startup.
+*   **Dynamic Mapping Updates**: Supports updating the core `architect.yaml` mapping by uploading a CSV file via an API endpoint, which is immediately converted and loaded into memory.
 
 ## Project Structure
 
 A quick overview of the directories within the `service`:
-*   `/api`: Contains the web server logic and REST API endpoint handlers.
+*   `/api`: Contains the web server logic, REST API endpoint handlers, and serves the static frontend files using an embedded filesystem. It also contains the `architect.yaml` configuration file.
 *   `/config`: Handles loading environment variables from the `.env` file.
 *   `/data`: Manages PLC communication (Modbus, Ethernet/IP) and data parsing based on `architect.yaml`.
 *   `/influx`: Provides the client for interacting with InfluxDB, including writing points and executing Flux queries.
@@ -47,6 +47,7 @@ The service is configured using a `.env` file located in the project root (one l
 #### Ethernet/IP Settings (if `PLC_DATA_SOURCE=ethernet-ip`)
 
 -   `ETHERNET_IP_ADDRESS`: The IP address of the target PLC.
+-   `PLC_TAG`: The name of the tag to read from the PLC.
 -   `ETHERNET_IP_LENGTH`: The length of the integer array tag to read from the PLC. (Default: `100`)
 
 #### InfluxDB Settings
@@ -59,11 +60,15 @@ The service is configured using a `.env` file located in the project root (one l
 
 ## The `architect.yaml` File
 
-This file is the heart of the service's data mapping logic. It defines how raw data from PLC registers or tags is translated into named fields. The service expects this file to be at `../shared/architect.yaml`.
+This file is the heart of the service's data mapping logic. It defines how raw data from PLC registers or tags is translated into named fields. The service expects this file to be at `service/api/architect.yaml`.
 
 **Structure:**
 ```yaml
-# ../shared/architect.yaml
+# service/api/architect.yaml
+
+project_meta:
+  machine_name: "My Machine"
+  customer_name: "ACME Corp"
 
 boolean_fields:
   - name: "SystemStatusBits.MachineRunning"
@@ -82,29 +87,30 @@ fault_fields:
     bit: 1
 
 float_fields:
-  - name: "Floats.MotorSpeed(HighINT)"
-    address: 20
-  - name: "Floats.MotorSpeed(LowINT)"
-    address: 21
-  - name: "Floats.ProductTemp(HighINT)"
-    address: 22
-  - name: "Floats.ProductTemp(LowINT)"
-    address: 23
+  Performance:
+    - name: "MotorSpeed(HighINT)"
+      address: 20
+    - name: "MotorSpeed(LowINT)"
+      address: 21
+  HopperVibratory:
+    - name: "ProductTemp(HighINT)"
+      address: 22
+    - name: "ProductTemp(LowINT)"
+      address: 23
 ```
 
+-   **`project_meta`**: A map of key-value pairs for project metadata.
 -   **`boolean_fields` & `fault_fields`**: Map a specific `bit` within a register at `address` to a boolean field `name`.
--   **`float_fields`**: Map two 16-bit integer registers (`address`) to a single 32-bit float value. The service automatically pairs fields with `(HighINT)` and `(LowINT)` suffixes on the same base name.
+-   **`float_fields`**: A map of groups, where each group contains a list of fields. The service automatically pairs fields with `(HighINT)` and `(LowINT)` suffixes on the same base name to form a 32-bit float.
 
 ### Dynamic Updates via CSV
-
 The service provides a convenient way to manage this mapping:
-1.  **Upload**: A user can upload a specially formatted CSV file (e.g., `go-import-tag.csv`) to the `/api/upload-csv` endpoint.
-2.  **Placement**: The file is saved in the `../shared/` directory.
-3.  **Conversion**: On the next startup, the service detects the `.csv` file, runs a conversion script (`../shared/csv-to-yaml.go`) to generate a new `architect.yaml`, and then deletes the source CSV.
+1.  **Upload**: A user can upload a specially formatted CSV file to the `/api/upload-csv` endpoint.
+2.  **Conversion & Reload**: The service immediately converts the CSV to the YAML structure and reloads it into the in-memory cache. The new mapping is used for all subsequent data polling.
 
 ## How It Works
 
-1.  **Initialization**: On startup, the service loads configuration from `.env`, checks for and converts any pending CSV files, and loads the final `architect.yaml` into an in-memory cache for fast access.
+1.  **Initialization**: On startup, the service loads configuration from `.env` and loads the `architect.yaml` into an in-memory cache for fast access.
 2.  **Data Source Branching**: Based on the `PLC_DATA_SOURCE` variable, it enters one of two main loops.
 3.  **Modbus TCP Mode**:
     -   The service starts a Modbus TCP server that listens for incoming connections from a PLC.
@@ -112,7 +118,7 @@ The service provides a convenient way to manage this mapping:
     -   At a regular interval (`PLC_POLL_MS`), the service reads its own holding register block, parses it using the `architect.yaml` mapping, and compares it to the last known state.
 4.  **Ethernet/IP Mode**:
     -   The service acts as a client, connecting to the specified Allen-Bradley PLC.
-    -   At a regular interval, it reads a predefined integer array tag (hardcoded as `EthernetDataWrite`).
+    -   At a regular interval, it reads a predefined integer array tag (configured via `PLC_TAG`).
     -   This array is treated as a block of registers and is parsed using the same `architect.yaml` mapping.
 5.  **Logging**: In both modes, if the parsed data has changed since the last poll, only the changed fields are written as a new point to InfluxDB. A full data snapshot is written periodically (`FULL_WRITE_MINUTES`) to ensure data consistency.
 
@@ -121,10 +127,10 @@ The service provides a convenient way to manage this mapping:
 The service hosts a REST API on port `:8080`.
 
 *   **`GET /`**
-    -   Serves the static files for the frontend web application, located in `../console/dist`.
+    -   Serves the static files for the frontend web application from an embedded filesystem.
 
 *   **`POST /api/upload-csv`**
-    -   Uploads a new CSV mapping file.
+    -   Uploads a new CSV mapping file. The file is converted to YAML and the configuration is reloaded in memory.
     -   **Form Data**: `file`: The CSV file to upload.
 
 *   **`GET /api/stats`**
@@ -136,17 +142,20 @@ The service hosts a REST API on port `:8080`.
     -   **Response Body**:
         ```json
         {
+          "project_meta": {
+            "machine_name": "My Machine"
+          },
+          "system_status": {
+            "SystemStatusBits.MachineRunning": true
+          },
           "boolean_percentages": {
-            "SystemStatusBits.MachineRunning": 95.5,
             "SystemStatusBits.InAutoMode": 80.1
           },
           "fault_counts": {
-            "FaultBits.EStopPressed": 2.0,
-            "FaultBits.MotorOverload": 5.0
+            "FaultBits.EStopPressed": 2.0
           },
           "float_averages": {
-            "Floats.MotorSpeed": 1750.25,
-            "Floats.ProductTemp": 45.7
+            "Floats.Performance.MotorSpeed": 1750.25
           }
         }
         ```
@@ -154,7 +163,7 @@ The service hosts a REST API on port `:8080`.
 *   **`GET /api/float-range`**
     -   Retrieves raw time-series data for a single float field. Useful for plotting graphs.
     -   **Query Parameters**:
-        -   `field`: The name of the float field to query (e.g., `Floats.MotorSpeed`). **Required**.
+        -   `field`: The name of the float field to query (e.g., `Floats.Performance.MotorSpeed`). **Required**.
         -   `start`, `stop`, `bucket`: Same as `/api/stats`.
     -   **Response Body**:
         ```json
@@ -193,7 +202,8 @@ The service hosts a REST API on port `:8080`.
 ## Key Dependencies
 
 The service is built on several key open-source libraries:
--   gologix: For Ethernet/IP communication.
--   mbserver: For the Modbus TCP server implementation.
--   influxdb-client-go: The official InfluxDB 2.x Go client.
--   godotenv: For loading environment variables.
+-   [gologix](https://github.com/danomagnum/gologix): For Ethernet/IP communication.
+-   [mbserver](https://github.com/tbrandon/mbserver): For the Modbus TCP server implementation.
+-   [influxdb-client-go](https://github.com/influxdata/influxdb-client-go): The official InfluxDB 2.x Go client.
+-   [godotenv](https://github.com/joho/godotenv): For loading environment variables.
+-   [yaml.v3](https://gopkg.in/yaml.v3): For YAML parsing and serialization.
