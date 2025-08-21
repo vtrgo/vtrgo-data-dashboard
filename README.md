@@ -1,4 +1,4 @@
-# vtrgo-data-dashboard
+# [vtrgo-data-dashboard](https://github.com/vtrgo/vtrgo-data-dashboard)
 
 vtrgo-data-dashboard is a full-stack application for industrial data monitoring. It consists of a Go-based backend service and a React-based frontend console.
 

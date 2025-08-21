@@ -1,4 +1,4 @@
-# console application for vtrgo-data-collection
+# console application for [vtrgo-data-dashboard](https://github.com/vtrgo/vtrgo-data-dashboard)
  
 The web-based dashboard for visualizing the industrial data collected by [service](../service/README.md). It provides real-time and historical insights into machine status, faults, and performance metrics through an intuitive, newspaper-themed interface.
 
@@ -69,7 +69,7 @@ The console is a client-side application that is served statically by the backen
 
 *   Node.js (LTS version recommended)
 *   `pnpm` (or `npm`/`yarn`) package manager
-*   A running instance of the **VTArchitect Service**.
+*   A running instance of the **vtrgo-data-dashboard service**.
 
 ## Available Scripts
 
@@ -99,7 +99,7 @@ pnpm run lint
 
 #### Build for production
 
-This command transpiles the TypeScript/React code and bundles it into a static `dist/` directory. The VTArchitect Service is configured to serve these files.
+This command transpiles the TypeScript/React code and bundles it into a static `dist/` directory. The vtrgo-data-dashboard service is configured to serve these files.
 
 ```bash
 pnpm run build
