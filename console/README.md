@@ -1,6 +1,6 @@
-# VTArchitect Console
-
-A modern, responsive web-based dashboard for visualizing industrial data collected by the [VTArchitect Service](../service/README.md). It provides real-time and historical insights into machine status, faults, and performance metrics through an intuitive, newspaper-themed interface.
+# console application for vtrgo-data-collection
+ 
+The web-based dashboard for visualizing the industrial data collected by [service](../service/README.md). It provides real-time and historical insights into machine status, faults, and performance metrics through an intuitive, newspaper-themed interface.
 
 This application is built with React, TypeScript, and Vite, and it communicates with the backend service to fetch and display data.
 
