@@ -1,6 +1,6 @@
 ```mermaid
 flowchart TD
-    subgraph Architect["VTArchitect"]
+    subgraph Architect["service"]
         main_go["./main.go"]
         api["api/api.go"]
         data["data/plc-data-map.go"]
@@ -19,16 +19,16 @@ flowchart TD
         influxdb["InfluxDB"]
     end
 
-    subgraph Web_Interface
+    subgraph Web_Interface["console"]
         web_config["CSV Upload <br> and <br> Data Dashboard"]
     end
 
-    subgraph Microcontroller["STM Microcontroller"]
+    subgraph Microcontroller["vtrgo-nfc-scanner"]
         microcontroller["NUCLEO-H755ZI-Q <br> (Mongoose Library) <br> ModbusTCP Server"]
         NFC["X-NUCLEO-NFC07A1"]
     end
 
-    subgraph User["User Application"]
+    subgraph User["vtrgo-mobile"]
         android["Android or IOS <br>Web Application"]
     end
 
