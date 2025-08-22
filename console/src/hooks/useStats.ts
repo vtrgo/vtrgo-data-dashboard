@@ -23,22 +23,25 @@ export function useStats(
   const [error, setError] = useState<Error | null>(null); // Added error state for robustness
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null); // Clear previous errors
-      try {
-        const response = await fetch(`/api/stats?start=${encodeURIComponent(start)}&stop=${encodeURIComponent(stop)}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      const fetchData = async () => {
+        const { toApiTimeValue } = await import("@/utils/toApiTimeValue");
+        setLoading(true);
+        setError(null); // Clear previous errors
+        try {
+          const apiStart = toApiTimeValue(start);
+          const apiStop = toApiTimeValue(stop);
+          const response = await fetch(`/api/stats?start=${encodeURIComponent(apiStart)}&stop=${encodeURIComponent(apiStop)}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const json = await response.json();
+          setData(json);
+        } catch (err) {
+          setError(err as Error);
+        } finally {
+          setLoading(false);
         }
-        const json = await response.json();
-        setData(json);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
     fetchData(); // Initial fetch when component mounts or dependencies change
 

@@ -20,6 +20,9 @@ import { Button } from "@/components/ui/button"; // Import Button
 import { ConfigDrawer } from "@/components/layout/ConfigDrawer"; // Import ConfigDrawer
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Quote } from "@/components/layout/Quote";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import type { DateRange } from "react-day-picker";
+import { format } from "date-fns";
 
 const POLLING_INTERVAL_MS = 60000;
 
@@ -63,6 +66,7 @@ function groupFloatsBySection(floats: Record<string, number>) {
 
 export default function Dashboard() {
   const [timeRange, setTimeRange] = useState({ start: "-1h", stop: "now()" });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const { data, loading, error } = useStats(timeRange, POLLING_INTERVAL_MS);
   // Fetch the detailed time-series data for SystemTotalParts
   const { data: systemTotalPartsData } = useFloatRange(
@@ -110,6 +114,25 @@ export default function Dashboard() {
   const setThemeIndex = (idx: number) => {
     setThemeIndexState(idx);
     localStorage.setItem("vtr-title-theme-index", String(idx));
+  };
+
+  // Handle date range changes from the date picker
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+    if (range?.from && range?.to) {
+      // Convert dates to ISO strings for the API
+      const start = format(range.from, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+      const stop = format(range.to, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+      setTimeRange({ start, stop });
+    }
+  };
+
+  // Handle preset time range changes (clear date picker when using presets)
+  const handlePresetTimeRangeChange = (start: string) => {
+    if (start) { // Only clear date range if a valid preset is selected
+      setDateRange(undefined);
+      setTimeRange({ start, stop: "now()" });
+    }
   };
 
   const groupedFloats = useMemo(() => (data ? groupFloatsBySection(data.float_averages || {}) : {}), [data]);
@@ -264,7 +287,12 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex flex-wrap gap-4 items-center text-sm">
-            <select className="border px-2 py-2 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring" onChange={(e) => setTimeRange({ start: e.target.value, stop: "now()" })} value={timeRange.start}>
+            <select 
+              className="border px-2 py-2 text-sm bg-background rounded-md shadow-sm hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring" 
+              onChange={(e) => handlePresetTimeRangeChange(e.target.value)} 
+              value={dateRange ? "" : timeRange.start}
+            >
+              <option value="">Custom date range</option>
               <option value="-1h">Last 1 hour</option>
               <option value="-3h">Last 3 hours</option>
               <option value="-6h">Last 6 hours</option>
@@ -277,6 +305,11 @@ export default function Dashboard() {
               <option value="-3w">Last 3 weeks</option>
               <option value="-1mo">Last 1 month</option>
             </select>
+            <DatePickerWithRange 
+              dateRange={dateRange}
+              onDateRangeChange={handleDateRangeChange}
+              className="w-auto"
+            />
           </div>
         </div>
       </div>

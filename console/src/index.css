@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./styles/title-themes.css";
+@import "react-day-picker/style.css";
 
 /* 
 ---break--- */
