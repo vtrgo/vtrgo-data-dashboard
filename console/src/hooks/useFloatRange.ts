@@ -21,23 +21,26 @@ export function useFloatRange(
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Don't fetch if no field is provided
-      if (!field) {
-        setData(null);
-        setLoading(false);
-        return;
-      }
+      const fetchData = async () => {
+        const { toApiTimeValue } = await import("@/utils/toApiTimeValue");
+        // Don't fetch if no field is provided
+        if (!field) {
+          setData(null);
+          setLoading(false);
+          return;
+        }
 
-      setLoading(true);
-      setError(null); // Clear previous errors
-      try {
-        const response = await fetch(`/api/float-range?field=${encodeURIComponent(field)}&start=${encodeURIComponent(start)}&stop=${encodeURIComponent(stop)}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const json = await response.json();
-        setData(json);
-      } catch (err) {
-        setError(err as Error);
+        setLoading(true);
+        setError(null); // Clear previous errors
+        try {
+          const apiStart = toApiTimeValue(start);
+          const apiStop = toApiTimeValue(stop);
+          const response = await fetch(`/api/float-range?field=${encodeURIComponent(field)}&start=${encodeURIComponent(apiStart)}&stop=${encodeURIComponent(apiStop)}`);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const json = await response.json();
+          setData(json);
+        } catch (err) {
+          setError(err as Error);
       } finally {
         setLoading(false);
       }
