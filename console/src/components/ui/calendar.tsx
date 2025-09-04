@@ -45,9 +45,10 @@ function Calendar({
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
         day_hidden: "invisible",
+        dropdown: "bg-accent text-foreground border border-border rounded-md px-2 py-1 focus:outline-none", // Custom style for dropdowns
         ...classNames,
       }}
-      captionLayout="dropdown" // Use dropdown layout to ensure month name is displayed
+      captionLayout="label" // Show only month name, not dropdowns
       fromYear={new Date().getFullYear() - 10}
       toYear={new Date().getFullYear() + 10}
       {...props}

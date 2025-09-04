@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Calendar as CalendarIcon } from "lucide-react"
-import type { DateRange, CaptionProps } from "react-day-picker"
+import type { DateRange } from "react-day-picker"
 import { format } from "date-fns"
 
 import { cn } from "@/lib/utils"
@@ -71,14 +71,7 @@ export function DatePickerWithRange({
               selected={date}
               onSelect={handleDateChange}
               numberOfMonths={2}
-              captionLayout="label" // Use label layout to display plain text
-              components={{
-                Caption: ({ calendarMonth }: CaptionProps) => (
-                  <div className="text-lg font-bold text-center">
-                    {format(new Date(calendarMonth), "MMMM")}
-                  </div>
-                )
-              }}
+              
             />
             <div className="flex justify-end space-x-2 mt-2">
               <Button variant="outline" size="sm" onClick={() => handleDateChange(undefined)}>
