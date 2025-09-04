@@ -19,6 +19,8 @@ type Props = {
   setThemeIndex: (index: number) => void
   enableTheming: boolean
   setEnableTheming: (enabled: boolean) => void
+  pollingInterval: number
+  setPollingInterval: (interval: number) => void
 }
 
 export function ConfigDrawer({
@@ -29,6 +31,8 @@ export function ConfigDrawer({
   setThemeIndex,
   enableTheming,
   setEnableTheming,
+  pollingInterval,
+  setPollingInterval,
 }: Props) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState<
@@ -95,6 +99,22 @@ export function ConfigDrawer({
         </DrawerHeader>
 
         <div className="space-y-4 py-4">
+          {/* Polling Interval Setting */}
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-foreground">Poll Interval (ms)</label>
+            <input
+              type="number"
+              min={100}
+              step={100}
+              value={pollingInterval}
+              onChange={e => {
+                const val = Number(e.target.value);
+                setPollingInterval(val);
+                localStorage.setItem("pollingIntervalMs", String(val));
+              }}
+              className="border rounded-md px-2 py-1 bg-background text-sm text-foreground w-28"
+            />
+          </div>
           {/* Theme Selector */}
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-foreground">Theme</label>
@@ -173,7 +193,7 @@ export function ConfigDrawer({
             <strong className="text-foreground">PLC Source:</strong> ethernet-ip
           </div>
           <div className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Poll Interval:</strong> 1000 ms
+            <strong className="text-foreground">Poll Interval:</strong> {pollingInterval} ms
           </div>
           <div className="text-sm text-muted-foreground">
             <strong className="text-foreground">Influx Bucket:</strong> status_data

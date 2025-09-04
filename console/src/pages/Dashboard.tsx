@@ -1,30 +1,31 @@
 import { useState, useEffect, useMemo } from "react";
+import { format } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { useStats } from "@/hooks/useStats";
 import { useFloatRange } from "@/hooks/useFloatRange";
-import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton";
-import { Title } from "@/components/layout/Title";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DashboardSection } from "@/components/layout/DashboardSection";
+import { DashboardSkeleton } from "@/components/layout/DashboardSkeleton";
+import { Title } from "@/components/layout/Title";
+import { ConfigDrawer } from "@/components/layout/ConfigDrawer";
+import { Quote } from "@/components/layout/Quote";
 import { BooleanPanel } from "@/components/panels/BooleanPanel";
 import { FloatPanel } from "@/components/panels/FloatPanel";
 import { FloatAreaChartPanel } from "@/components/panels/FloatAreaChartPanel";
 import { HealthSummaryPanel } from "@/components/panels/HealthSummaryPanel";
 import { ProjectMetaPanel } from "@/components/panels/ProjectMetaPanel";
 import { FaultBarChartPanel } from "@/components/panels/FaultBarChartPanel";
+import { Button } from "@/components/ui/button";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { getRandomTitle } from "@/utils/titles";
 import { getAvailableThemes } from "@/utils/getThemes";
 import { describeTimeRange } from "@/utils/describeTimeRange";
 import { inspirationalQuotes } from "@/utils/quotes";
 import { Settings2 } from "lucide-react";
-import { Button } from "@/components/ui/button"; // Import Button
-import { ConfigDrawer } from "@/components/layout/ConfigDrawer"; // Import ConfigDrawer
-import { ThemeProvider } from "@/components/ui/theme-provider";
-import { Quote } from "@/components/layout/Quote";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
-import type { DateRange } from "react-day-picker";
-import { format } from "date-fns";
 
-const POLLING_INTERVAL_MS = 60000;
+
+const DEFAULT_POLLING_INTERVAL_MS = 60000;
 
 function formatSectionTitle(name: string) {
   return name
@@ -64,27 +65,34 @@ function groupFloatsBySection(floats: Record<string, number>) {
   return grouped;
 }
 
+
 export default function Dashboard() {
   const [timeRange, setTimeRange] = useState({ start: "-1h", stop: "now()" });
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const { data, loading, error } = useStats(timeRange, POLLING_INTERVAL_MS);
+  // Polling interval state, initialized from localStorage or default
+  const [pollingInterval, setPollingInterval] = useState(() => {
+    const stored = localStorage.getItem("pollingIntervalMs");
+    return stored ? Number(stored) || DEFAULT_POLLING_INTERVAL_MS : DEFAULT_POLLING_INTERVAL_MS;
+  });
+
+  const { data, loading, error } = useStats(timeRange, pollingInterval);
   // Fetch the detailed time-series data for SystemTotalParts
   const { data: systemTotalPartsData } = useFloatRange(
     'Floats.Performance.SystemTotalParts',
     timeRange,
-    POLLING_INTERVAL_MS
+    pollingInterval
   );
   // Fetch the detailed time-series data for PartsPerMinute
   const { data: partsPerMinuteData } = useFloatRange(
     'Floats.Performance.PartsPerMinute',
     timeRange,
-    POLLING_INTERVAL_MS
+    pollingInterval
   );
   // Fetch the detailed time-series data for CycleTime
   const { data: cycleTimeData } = useFloatRange(
     'Floats.Performance.CycleTime',
     timeRange,
-    POLLING_INTERVAL_MS
+    pollingInterval
   );
   const [showConfig, setShowConfig] = useState(false);
   const [randomTitle, setRandomTitle] = useState("");
@@ -244,7 +252,7 @@ export default function Dashboard() {
                   floatFields={floatFields}
                   start={timeRange.start}
                   stop={timeRange.stop}
-                  intervalMs={POLLING_INTERVAL_MS}
+                  intervalMs={pollingInterval}
                 />
               )}
             </div>
@@ -323,6 +331,8 @@ export default function Dashboard() {
           setThemeIndex={setThemeIndex}
           enableTheming={enableTheming}
           setEnableTheming={setEnableTheming}
+          pollingInterval={pollingInterval}
+          setPollingInterval={setPollingInterval}
         />
       </div>
 
