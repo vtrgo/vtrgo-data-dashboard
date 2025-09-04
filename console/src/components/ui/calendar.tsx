@@ -19,7 +19,7 @@ function Calendar({
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
+        caption_label: "text-lg font-bold text-primary", // Ensure the month name is styled prominently
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
@@ -47,6 +47,9 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
+      captionLayout="dropdown" // Use dropdown layout to ensure month name is displayed
+      fromYear={new Date().getFullYear() - 10}
+      toYear={new Date().getFullYear() + 10}
       {...props}
     />
   )

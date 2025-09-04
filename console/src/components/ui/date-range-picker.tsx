@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Calendar as CalendarIcon } from "lucide-react"
-import type { DateRange } from "react-day-picker"
+import type { DateRange, CaptionProps } from "react-day-picker"
 import { format } from "date-fns"
 
 import { cn } from "@/lib/utils"
@@ -51,26 +51,41 @@ export function DatePickerWithRange({
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
+                  {format(date.from, "MMMM dd, yyyy")} -{" "}
+                  {format(date.to, "MMMM dd, yyyy")}
                 </>
               ) : (
-                format(date.from, "LLL dd, y")
+                format(date.from, "MMMM dd, yyyy")
               )
             ) : (
               <span>Pick a date range</span>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={handleDateChange}
-            numberOfMonths={2}
-          />
+        <PopoverContent className="w-auto p-0" align="center" side="bottom" sideOffset={60}>
+          <div className="p-3">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={date?.from}
+              selected={date}
+              onSelect={handleDateChange}
+              numberOfMonths={2}
+              captionLayout="label" // Use label layout to display plain text
+              components={{
+                Caption: ({ calendarMonth }: CaptionProps) => (
+                  <div className="text-lg font-bold text-center">
+                    {format(new Date(calendarMonth), "MMMM")}
+                  </div>
+                )
+              }}
+            />
+            <div className="flex justify-end space-x-2 mt-2">
+              <Button variant="outline" size="sm" onClick={() => handleDateChange(undefined)}>
+                Clear
+              </Button>
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
     </div>
