@@ -8,7 +8,7 @@ A backend service for industrial data acquisition, processing, and visualization
 
 ## [Console](./console)
 
-A modern, responsive web-based dashboard for visualizing industrial data collected by the service. It provides real-time and historical insights into machine status, faults, and performance metrics through an intuitive, newspaper-themed interface. This application is built with React, TypeScript, and Vite.
+A modern, responsive web-based dashboard for visualizing industrial data collected by the service. It provides real-time and historical insights into machine status, faults, and performance metrics through an intuitive interface. This application is built with React, TypeScript, and Vite and uses TailwindCSS and ShadCN for styling.
 
 ---
 
