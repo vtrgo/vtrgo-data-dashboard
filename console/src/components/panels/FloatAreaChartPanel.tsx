@@ -1,15 +1,6 @@
 // file: console/src/components/panels/FloatAreaChartPanel.tsx
 
 import { useState, useEffect, useMemo } from 'react';
-import { useFloatRange } from '@/hooks/useFloatRange';
-import { ChartPanel } from '@/components/panels/ChartPanel';
-import {
-  getUnit,
-  getGroupLabel,
-  getFieldLabel,
-  parseKey,
-  formatSegment,
-} from '@/utils/databaseFields';
 import {
   AreaChart,
   Area,
@@ -19,7 +10,16 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { CustomChartTooltip } from '@/components/charts/CustomChartTooltip';
+import { useFloatRange } from '@/hooks/useFloatRange';
+import { ChartPanel } from '@/components/panels/ChartPanel';
+import { CustomChartTooltip } from '@/components/ui/CustomChartTooltip';
+import {
+  getUnit,
+  getGroupLabel,
+  getFieldLabel,
+  parseKey,
+  formatSegment,
+} from '@/utils/databaseFields';
 
 interface FloatAreaChartPanelProps {
   floatFields: string[];

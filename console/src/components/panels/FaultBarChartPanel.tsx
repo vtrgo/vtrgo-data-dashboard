@@ -1,8 +1,6 @@
 // file: console/src/components/panels/FaultBarChartPanel.tsx
 
 import { useMemo } from 'react';
-import { ChartPanel } from '@/components/panels/ChartPanel';
-import { getLabel } from '@/utils/databaseFields';
 import {
   BarChart,
   Bar,
@@ -12,7 +10,9 @@ import {
   ResponsiveContainer,
   LabelList,
 } from 'recharts';
-import { CustomChartTooltip } from '@/components/charts/CustomChartTooltip';
+import { ChartPanel } from '@/components/panels/ChartPanel';
+import { CustomChartTooltip } from '@/components/ui/CustomChartTooltip';
+import { getLabel } from '@/utils/databaseFields';
 
 interface FaultBarChartPanelProps {
   faults: Record<string, number>;
